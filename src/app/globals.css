@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0f0a1a;
+  --foreground: #f8fafc;
+}
+
+.light {
+  --background: #f5f3ff;
+  --foreground: #1e1b4b;
+}
+
+.dark {
+  --background: #0f0a1a;
+  --foreground: #f8fafc;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Light theme text adjustments */
+.light .text-white {
+  color: #1e1b4b;
+}
+
+.light .text-white\/90 {
+  color: rgba(30, 27, 75, 0.9);
+}
+
+.light .text-white\/80 {
+  color: rgba(30, 27, 75, 0.8);
+}
+
+.light .text-white\/70 {
+  color: rgba(30, 27, 75, 0.7);
+}
+
+.light .text-white\/60 {
+  color: rgba(30, 27, 75, 0.6);
+}
+
+.light .text-white\/50 {
+  color: rgba(30, 27, 75, 0.5);
+}
+
+.light .text-white\/40 {
+  color: rgba(30, 27, 75, 0.4);
+}
+
+.light .border-white\/20 {
+  border-color: rgba(30, 27, 75, 0.15);
+}
+
+.light .border-white\/10 {
+  border-color: rgba(30, 27, 75, 0.1);
+}
+
+.light .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.light .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.light .bg-slate-900\/40 {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.light .bg-slate-900\/60,
+.light .bg-slate-900\/80,
+.light .bg-slate-950\/50 {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall 2.5s ease-in forwards;
+}
+
+/* Toast-only: must be used with left-1/2 -translate-x-1/2 */
+@keyframes slide-up-toast {
+  from {
+    transform: translate(-50%, 100%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up-toast 0.4s ease-out forwards;
+}
+
+@keyframes fade-up {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.35s ease-out forwards;
+}
