@@ -21,10 +21,15 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchSession: async () => {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10_000);
+
       const res = await fetch("/api/auth/me", {
         credentials: "include",
         cache: "no-store",
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) {
         set({ user: null, isAuthenticated: false, hydrated: true });
