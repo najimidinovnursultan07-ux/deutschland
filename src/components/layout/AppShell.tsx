@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
+import { PageContainer } from "./PageContainer";
 import { AchievementToast } from "@/components/gamification/AchievementToast";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { useAppStore } from "@/store/appStore";
@@ -18,6 +19,8 @@ export function AppShell({ children }: AppShellProps) {
   const theme = useAppStore((s) => s.settings.theme);
   const interfaceLang = useInterfaceLang();
   const isLessonRoute = pathname.startsWith("/lessons/");
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isFullBleed = isLessonRoute || isAdminRoute;
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -25,7 +28,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [theme]);
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen w-full overflow-x-hidden">
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{
@@ -42,18 +45,24 @@ export function AppShell({ children }: AppShellProps) {
         aria-hidden
       />
 
-      {!isLessonRoute && <Header />}
+      {!isFullBleed && <Header />}
       <main
         className={cn(
-          "flex w-full flex-col overflow-x-hidden",
-          isLessonRoute
-            ? "w-full items-center p-0"
-            : "items-center px-4 py-6 pb-24 md:pb-8 lg:px-6"
+          "flex w-full min-w-0 flex-col overflow-x-hidden",
+          isFullBleed
+            ? "items-center p-0"
+            : "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8"
         )}
       >
-        {children}
+        {isFullBleed ? (
+          children
+        ) : (
+          <PageContainer className="flex w-full min-w-0 flex-1 flex-col py-6">
+            {children}
+          </PageContainer>
+        )}
       </main>
-      {!isLessonRoute && <BottomNav />}
+      {!isFullBleed && <BottomNav />}
       <AchievementToast interfaceLang={interfaceLang} />
     </div>
   );

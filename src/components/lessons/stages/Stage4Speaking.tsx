@@ -8,8 +8,8 @@ import { ListenButton } from "@/components/ui/ListenButton";
 import { getUiString } from "@/lib/constants";
 import { speechMatches } from "@/lib/lessonSentences";
 import {
-  isVoiceSearchSupported,
-  startPronunciationPractice,
+  startPronunciationPracticeSecure,
+  type MicAccessResult,
 } from "@/lib/speech";
 import { playCorrectSound } from "@/lib/sounds";
 import type { SpeakingExercise } from "@/types";
@@ -26,6 +26,19 @@ interface Stage4SpeakingProps {
   onSuccess: (bonus: boolean) => void;
   onSkip: () => void;
   embedded?: boolean;
+}
+
+function micErrorMessage(
+  reason: MicAccessResult,
+  interfaceLang: "ky" | "ru"
+): string {
+  if (reason === "insecure") {
+    return getUiString(interfaceLang, "micInsecure");
+  }
+  if (reason === "unsupported") {
+    return getUiString(interfaceLang, "micUnsupported");
+  }
+  return getUiString(interfaceLang, "micDenied");
 }
 
 export function Stage4Speaking({
@@ -45,20 +58,18 @@ export function Stage4Speaking({
     "idle"
   );
   const [transcript, setTranscript] = useState("");
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   const prompt =
     interfaceLang === "ky" ? exercise.promptKy : exercise.promptRu;
 
-  const handleMic = useCallback(() => {
-    if (!isVoiceSearchSupported()) {
-      setResult("denied");
-      return;
-    }
+  const handleMic = useCallback(async () => {
     setListening(true);
     setResult("idle");
     setTranscript("");
+    setErrorDetail(null);
 
-    const stop = startPronunciationPractice(
+    const stop = await startPronunciationPracticeSecure(
       targetLang,
       (spoken) => {
         setTranscript(spoken);
@@ -71,15 +82,19 @@ export function Stage4Speaking({
           setResult("fail");
         }
       },
-      () => {
+      (reason) => {
         setListening(false);
         setResult("denied");
+        setErrorDetail(micErrorMessage(reason, interfaceLang));
       }
     );
 
     if (!stop) {
       setListening(false);
       setResult("denied");
+      setErrorDetail(
+        (detail) => detail ?? getUiString(interfaceLang, "micDenied")
+      );
     }
   }, [
     targetLang,
@@ -87,6 +102,7 @@ export function Stage4Speaking({
     soundsEnabled,
     bonusAwarded,
     onSuccess,
+    interfaceLang,
   ]);
 
   const promptBlock = (
@@ -127,7 +143,7 @@ export function Stage4Speaking({
           onClick={handleMic}
           disabled={listening || result === "success"}
           className={cn(
-            "relative flex h-28 w-28 items-center justify-center rounded-full border-2 transition-all",
+            "flex h-28 w-28 items-center justify-center rounded-full border-2 transition-all",
             listening
               ? "border-red-400/60 bg-red-500/20 animate-pulse"
               : result === "success"
@@ -158,10 +174,13 @@ export function Stage4Speaking({
             {getUiString(interfaceLang, "tryAgain")}
           </p>
         )}
-        {result === "denied" && (
-          <div className="flex items-center gap-2 text-sm text-white/50">
-            <MicOff size={16} />
-            {getUiString(interfaceLang, "micDenied")}
+        {result === "denied" && errorDetail && (
+          <div
+            role="alert"
+            className="w-full rounded-2xl border border-red-500/40 bg-red-500/15 px-4 py-3 text-center text-sm text-red-100"
+          >
+            <MicOff size={16} className="mx-auto mb-1 text-red-300" />
+            {errorDetail}
           </div>
         )}
       </div>

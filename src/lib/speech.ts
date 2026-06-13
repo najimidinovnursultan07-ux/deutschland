@@ -5,6 +5,43 @@ const LOCKED_LOCALES: Record<TargetLanguage, string> = {
   en: "en-US",
 };
 
+export type MicAccessResult =
+  | "granted"
+  | "denied"
+  | "unsupported"
+  | "insecure";
+
+function isLocalDevHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+/** Request mic via getUserMedia before SpeechRecognition — avoids silent failures */
+export async function requestMicrophoneAccess(): Promise<MicAccessResult> {
+  if (typeof window === "undefined") return "unsupported";
+
+  if (!window.isSecureContext && !isLocalDevHost()) {
+    return "insecure";
+  }
+
+  if (navigator.mediaDevices?.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      return "granted";
+    } catch {
+      return "denied";
+    }
+  }
+
+  if (getSpeechRecognition()) {
+    return "granted";
+  }
+
+  return "unsupported";
+}
+
 function pickVoiceForLocale(locale: string): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
 
@@ -80,7 +117,7 @@ interface SpeechRecognitionInstance extends EventTarget {
   start: () => void;
   stop: () => void;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: Event) => void) | null;
   onend: (() => void) | null;
 }
 
@@ -104,36 +141,67 @@ export function isVoiceSearchSupported(): boolean {
 export function startPronunciationPractice(
   targetLang: TargetLanguage,
   onResult: (transcript: string) => void,
-  onError?: () => void
+  onError?: (reason: MicAccessResult) => void
 ): (() => void) | null {
+  return startVoiceSearch(LOCKED_LOCALES[targetLang], onResult, onError);
+}
+
+/** Async entry — requests mic permission before starting recognition */
+export async function startPronunciationPracticeSecure(
+  targetLang: TargetLanguage,
+  onResult: (transcript: string) => void,
+  onError?: (reason: MicAccessResult) => void
+): Promise<(() => void) | null> {
+  const access = await requestMicrophoneAccess();
+  if (access !== "granted") {
+    onError?.(access);
+    return null;
+  }
   return startVoiceSearch(LOCKED_LOCALES[targetLang], onResult, onError);
 }
 
 export function startVoiceSearch(
   lang: string,
   onResult: (transcript: string) => void,
-  onError?: () => void
+  onError?: (reason: MicAccessResult) => void
 ): (() => void) | null {
   const SpeechRecognition = getSpeechRecognition();
-  if (!SpeechRecognition) return null;
+  if (!SpeechRecognition) {
+    onError?.("unsupported");
+    return null;
+  }
 
   const recognition = new SpeechRecognition();
   recognition.lang = lang;
   recognition.continuous = false;
   recognition.interimResults = false;
 
+  let finished = false;
+
   recognition.onresult = (event: SpeechRecognitionEventLike) => {
-    const transcript = event.results[0][0].transcript;
+    finished = true;
+    const transcript = event.results[0]?.[0]?.transcript ?? "";
     onResult(transcript);
   };
 
   recognition.onerror = () => {
-    onError?.();
+    if (!finished) {
+      onError?.("denied");
+    }
   };
 
-  recognition.start();
+  try {
+    recognition.start();
+  } catch {
+    onError?.("denied");
+    return null;
+  }
 
   return () => {
-    recognition.stop();
+    try {
+      recognition.stop();
+    } catch {
+      /* already stopped */
+    }
   };
 }

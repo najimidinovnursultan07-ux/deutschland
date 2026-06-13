@@ -35,7 +35,7 @@ function HomeContent() {
   }, [searchParams]);
 
   return (
-    <div className="space-y-8">
+    <div className="w-full min-w-0 space-y-8">
       <ConfettiOverlay active={showCelebration} />
 
       {showCelebration && (

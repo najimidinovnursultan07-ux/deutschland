@@ -36,6 +36,7 @@ export interface SpeakingExercise {
 }
 
 export interface LessonSessionState {
+  lessonId: string;
   stage: LessonStage;
   vocabIndex: number;
   stage2Index: number;
@@ -44,6 +45,7 @@ export interface LessonSessionState {
   stage5Index: number;
   speakingBonusAwarded: boolean;
   startedAt: number;
+  quizPassed: boolean;
 }
 
 export interface LessonWorkflowData {

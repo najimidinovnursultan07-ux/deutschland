@@ -21,10 +21,11 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-slate-900/80 backdrop-blur-xl md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-slate-900/90 backdrop-blur-xl md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Mobile navigation"
     >
-      <div className="flex items-center justify-around px-2 py-2">
+      <div className="flex w-full items-center justify-around px-1 py-2 sm:px-2">
         {NAV.map(({ href, icon: Icon, key }) => {
           const active = pathname === href;
           return (
@@ -32,12 +33,12 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-xs transition-colors",
+                "flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] transition-colors sm:px-3 sm:text-xs",
                 active ? "text-violet-300" : "text-white/50"
               )}
             >
-              <Icon size={20} />
-              <span>{getUiString(interfaceLang, key)}</span>
+              <Icon size={20} className="shrink-0" />
+              <span className="truncate">{getUiString(interfaceLang, key)}</span>
             </Link>
           );
         })}

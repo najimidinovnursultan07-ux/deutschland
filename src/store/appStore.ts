@@ -23,11 +23,14 @@ import type {
   LanguagePair,
   SRSRecord,
 } from "@/types";
+import type { LessonSessionState } from "@/types/lessonWorkflow";
 
 interface AppStore extends AppState {
   setLanguagePair: (pair: LanguagePair) => void;
   setSelectedLevel: (level: CEFRLevel) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
+  saveLessonSession: (session: LessonSessionState) => void;
+  clearLessonSession: (lessonId?: string) => void;
   completeLesson: (lessonId: string, level: CEFRLevel, wordCount: number) => void;
   passLessonQuiz: (
     lessonId: string,
@@ -117,6 +120,18 @@ export const useAppStore = create<AppStore>()(
       srsRecords: {},
       unlockedAchievements: [],
       pendingAchievement: null,
+      activeLessonSession: null,
+
+      saveLessonSession: (session) =>
+        set({ activeLessonSession: session }),
+
+      clearLessonSession: (lessonId) =>
+        set((state) => {
+          if (lessonId && state.activeLessonSession?.lessonId !== lessonId) {
+            return state;
+          }
+          return { activeLessonSession: null };
+        }),
 
       setLanguagePair: (pair) => {
         const base = pair.split("-")[0] as "ky" | "ru";
@@ -255,6 +270,7 @@ export const useAppStore = create<AppStore>()(
         get().completeLesson(lessonId, level, wordCount);
         get().addXp(50);
         get().addRecentLesson(lessonId);
+        get().clearLessonSession(lessonId);
 
         set((s) => {
           const newUnlock = [...s.unlockedAchievements];

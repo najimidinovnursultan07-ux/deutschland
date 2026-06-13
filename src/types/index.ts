@@ -7,6 +7,16 @@ export type InterfaceLanguage = "ky" | "ru";
 export type AppPage = "home" | "dictionary" | "profile" | "settings" | "leaderboard";
 export type DailyGoalTier = "casual" | "serious" | "insane";
 
+export type UserRole = "USER" | "MODERATOR" | "ADMIN";
+
+export interface UserSuggestion {
+  id: string;
+  userId: string;
+  userEmail: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -15,6 +25,8 @@ export interface User {
   password: string;
   targetLanguage: TargetLanguage;
   createdAt: string;
+  /** Hidden from settings UI — managed in admin panel only */
+  role: UserRole;
 }
 
 /** Legacy UI/dictionary shape — curriculum source uses `CurriculumWord` */
@@ -133,6 +145,7 @@ export interface AppState {
   srsRecords: Record<string, SRSRecord>;
   unlockedAchievements: string[];
   pendingAchievement: string | null;
+  activeLessonSession: import("./lessonWorkflow").LessonSessionState | null;
 }
 
 export interface AuthCredentials {

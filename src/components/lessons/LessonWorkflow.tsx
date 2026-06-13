@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ChevronRight, Volume2 } from "lucide-react";
 import { LessonStageTracker } from "./LessonStageTracker";
@@ -13,6 +13,7 @@ import {
   buildSentenceExercises,
   buildSpeakingExercises,
 } from "@/lib/lessonSentences";
+import { fluidContainerClass } from "@/components/layout/PageContainer";
 import { getUiString } from "@/lib/constants";
 import { speakText } from "@/lib/speech";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
@@ -30,9 +31,14 @@ export function LessonWorkflow({ lesson }: LessonWorkflowProps) {
   const passedQuizLessonIds = useAppStore((s) => s.passedQuizLessonIds);
   const passLessonQuiz = useAppStore((s) => s.passLessonQuiz);
   const addXp = useAppStore((s) => s.addXp);
+  const activeLessonSession = useAppStore((s) => s.activeLessonSession);
+  const saveLessonSession = useAppStore((s) => s.saveLessonSession);
   const targetLang = getTargetLangFromPair(languagePair);
   const isPassed = passedQuizLessonIds.includes(lesson.id);
   const soundsEnabled = settings.achievementSounds;
+
+  const restoredSession =
+    activeLessonSession?.lessonId === lesson.id ? activeLessonSession : null;
 
   const workflowData = useMemo(() => {
     const stage2Questions = buildLessonQuizQuestions(
@@ -57,15 +63,46 @@ export function LessonWorkflow({ lesson }: LessonWorkflowProps) {
     };
   }, [lesson, targetLang, interfaceLang]);
 
-  const [stage, setStage] = useState<LessonStage>(1);
-  const [vocabIndex, setVocabIndex] = useState(0);
-  const [stage2Index, setStage2Index] = useState(0);
-  const [stage3Index, setStage3Index] = useState(0);
-  const [stage4Index, setStage4Index] = useState(0);
-  const [stage5Index, setStage5Index] = useState(0);
-  const [speakingBonusAwarded, setSpeakingBonusAwarded] = useState(false);
-  const [startedAt] = useState(() => Date.now());
-  const [quizPassed, setQuizPassed] = useState(isPassed);
+  const [stage, setStage] = useState<LessonStage>(restoredSession?.stage ?? 1);
+  const [vocabIndex, setVocabIndex] = useState(restoredSession?.vocabIndex ?? 0);
+  const [stage2Index, setStage2Index] = useState(restoredSession?.stage2Index ?? 0);
+  const [stage3Index, setStage3Index] = useState(restoredSession?.stage3Index ?? 0);
+  const [stage4Index, setStage4Index] = useState(restoredSession?.stage4Index ?? 0);
+  const [stage5Index, setStage5Index] = useState(restoredSession?.stage5Index ?? 0);
+  const [speakingBonusAwarded, setSpeakingBonusAwarded] = useState(
+    restoredSession?.speakingBonusAwarded ?? false
+  );
+  const [startedAt] = useState(() => restoredSession?.startedAt ?? Date.now());
+  const [quizPassed, setQuizPassed] = useState(
+    restoredSession?.quizPassed ?? isPassed
+  );
+
+  useEffect(() => {
+    saveLessonSession({
+      lessonId: lesson.id,
+      stage,
+      vocabIndex,
+      stage2Index,
+      stage3Index,
+      stage4Index,
+      stage5Index,
+      speakingBonusAwarded,
+      startedAt,
+      quizPassed,
+    });
+  }, [
+    lesson.id,
+    stage,
+    vocabIndex,
+    stage2Index,
+    stage3Index,
+    stage4Index,
+    stage5Index,
+    speakingBonusAwarded,
+    startedAt,
+    quizPassed,
+    saveLessonSession,
+  ]);
 
   const advanceStage = (next: LessonStage) => {
     setStage(next);
@@ -257,7 +294,9 @@ export function LessonWorkflow({ lesson }: LessonWorkflowProps) {
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-start overflow-x-hidden bg-slate-950 text-white antialiased">
-      <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 sm:px-6 md:gap-8 md:py-12">
+      <main
+        className={`flex w-full min-w-0 flex-col gap-6 py-6 pb-8 md:gap-8 md:py-12 ${fluidContainerClass}`}
+      >
         <div className="flex w-full items-center justify-start gap-4">
           <Link
             href="/"

@@ -32,7 +32,7 @@ export function LeaderboardView() {
     .map((e, i) => ({ ...e, rank: i + 1 }));
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
           <Trophy className="text-amber-400" size={28} />
