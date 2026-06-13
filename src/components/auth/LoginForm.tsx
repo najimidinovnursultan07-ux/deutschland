@@ -16,11 +16,14 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const success = login(email, password);
+    setLoading(true);
+    const success = await login(email, password);
+    setLoading(false);
     if (!success) {
       setError("Туура эмес почта же сырсөз / Неверный email или пароль");
     }
@@ -39,6 +42,7 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
         placeholder="you@example.com"
         required
         autoComplete="email"
+        disabled={loading}
       />
       <PasswordInput
         label="Сырсөз / Пароль"
@@ -47,6 +51,7 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
         placeholder="••••••••"
         required
         autoComplete="current-password"
+        disabled={loading}
       />
 
       {error && (
@@ -55,9 +60,9 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
         </p>
       )}
 
-      <Button type="submit" className="w-full" size="lg">
+      <Button type="submit" className="w-full" size="lg" disabled={loading}>
         <LogIn size={18} />
-        Кирүү / Войти
+        {loading ? "..." : "Кирүү / Войти"}
       </Button>
 
       <p className="text-center text-sm text-white/50">
@@ -66,6 +71,7 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
           type="button"
           onClick={onSwitchToSignup}
           className="font-medium text-violet-300 hover:text-violet-200"
+          disabled={loading}
         >
           Катталуу / Регистрация
         </button>

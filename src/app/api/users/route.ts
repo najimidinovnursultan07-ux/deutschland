@@ -2,12 +2,30 @@ import { NextResponse } from "next/server";
 import { readSessionFromCookieHeader } from "@/lib/auth/session";
 import { isRootAdmin } from "@/lib/admin";
 import {
-  listDirectoryUsers,
-  updateDirectoryUserRole,
-} from "@/lib/users/repository";
-import type { UserRole } from "@/types";
+  listPublicUsers,
+  updateAuthUserRole,
+} from "@/lib/auth/userRepository";
+import type { DirectoryUser, UserRole } from "@/types";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function toDirectoryUser(user: {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}): DirectoryUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    createdAt: user.createdAt,
+    updatedAt: user.createdAt,
+  };
+}
 
 export async function GET(request: Request) {
   try {
@@ -17,8 +35,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const users = await listDirectoryUsers();
-    return NextResponse.json({ users });
+    const users = await listPublicUsers();
+    return NextResponse.json({
+      users: users.map(toDirectoryUser),
+    });
   } catch (error) {
     console.error("[GET /api/users]", error);
     return NextResponse.json(
@@ -52,7 +72,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
-    const updated = await updateDirectoryUserRole(body.userId, body.role);
+    const updated = await updateAuthUserRole(body.userId, body.role);
     if (!updated) {
       return NextResponse.json(
         { error: "User not found or cannot be modified" },
@@ -60,7 +80,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    return NextResponse.json({ user: updated });
+    return NextResponse.json({ user: toDirectoryUser(updated) });
   } catch (error) {
     console.error("[PATCH /api/users]", error);
     return NextResponse.json(

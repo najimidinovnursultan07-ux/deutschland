@@ -8,7 +8,7 @@ import type { UserRole } from "@/types";
 
 export function useAdminUsers() {
   const currentUser = useAuthStore((s) => s.user);
-  const applyServerRole = useAuthStore((s) => s.applyServerRole);
+  const fetchSession = useAuthStore((s) => s.fetchSession);
   const canManage = canManageUsers(currentUser);
   const [users, setUsers] = useState<DirectoryUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,7 +69,9 @@ export function useAdminUsers() {
           setUsers((prev) =>
             prev.map((u) => (u.id === data.user!.id ? data.user! : u))
           );
-          applyServerRole(userId, data.user.role);
+          if (currentUser?.id === userId) {
+            await fetchSession();
+          }
         }
 
         return true;
@@ -80,7 +82,7 @@ export function useAdminUsers() {
         setUpdatingId(null);
       }
     },
-    [canManage, applyServerRole]
+    [canManage, currentUser?.id, fetchSession]
   );
 
   useEffect(() => {

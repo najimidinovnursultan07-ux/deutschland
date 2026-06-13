@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { createInitialLevelProgress } from "@/data/lessonFactory";
 import {
   ACHIEVEMENTS,
@@ -15,6 +14,7 @@ import {
   MAX_HEARTS,
   todayKey,
 } from "@/lib/gamification";
+import type { PersistedAppState } from "@/lib/progress/appStateRepository";
 import type {
   AppSettings,
   AppState,
@@ -48,6 +48,9 @@ interface AppStore extends AppState {
   initSRSForWords: (wordIds: string[]) => void;
   clearPendingAchievement: () => void;
   getDueReviewCount: () => number;
+  hydrateFromServer: (state: PersistedAppState) => void;
+  exportPersistedState: () => PersistedAppState;
+  resetProgress: () => void;
 }
 
 const defaultSettings: AppSettings = {
@@ -97,30 +100,34 @@ function resetDailyXpIfNeeded(dailyXp: number, dailyXpDate: string): {
   return { dailyXp: 0, dailyXpDate: today };
 }
 
-export const useAppStore = create<AppStore>()(
-  persist(
-    (set, get) => ({
-      languagePair: "ru-de",
-      selectedLevel: "A0",
-      settings: defaultSettings,
-      streak: 0,
-      lastStudyDate: null,
-      totalWordsLearned: 0,
-      recentLessonIds: [],
-      levelProgress: createInitialLevelProgress(),
-      completedLessonIds: [],
-      passedQuizLessonIds: [],
-      perfectQuizCount: 0,
-      xp: 0,
-      dailyXp: 0,
-      dailyXpDate: todayKey(),
-      dailyGoalTier: "casual",
-      hearts: MAX_HEARTS,
-      lastHeartRegenAt: new Date().toISOString(),
-      srsRecords: {},
-      unlockedAchievements: [],
-      pendingAchievement: null,
-      activeLessonSession: null,
+function createDefaultAppState(): AppState {
+  return {
+    languagePair: "ru-de",
+    selectedLevel: "A0",
+    settings: defaultSettings,
+    streak: 0,
+    lastStudyDate: null,
+    totalWordsLearned: 0,
+    recentLessonIds: [],
+    levelProgress: createInitialLevelProgress(),
+    completedLessonIds: [],
+    passedQuizLessonIds: [],
+    perfectQuizCount: 0,
+    xp: 0,
+    dailyXp: 0,
+    dailyXpDate: todayKey(),
+    dailyGoalTier: "casual",
+    hearts: MAX_HEARTS,
+    lastHeartRegenAt: new Date().toISOString(),
+    srsRecords: {},
+    unlockedAchievements: [],
+    pendingAchievement: null,
+    activeLessonSession: null,
+  };
+}
+
+export const useAppStore = create<AppStore>()((set, get) => ({
+  ...createDefaultAppState(),
 
       saveLessonSession: (session) =>
         set({ activeLessonSession: session }),
@@ -298,10 +305,42 @@ export const useAppStore = create<AppStore>()(
         })),
 
       clearPendingAchievement: () => set({ pendingAchievement: null }),
-    }),
-    { name: "lingua-app" }
-  )
-);
+
+      hydrateFromServer: (state) =>
+        set({
+          ...get(),
+          ...state,
+          pendingAchievement: null,
+        }),
+
+      exportPersistedState: () => {
+        const s = get();
+        return {
+          languagePair: s.languagePair,
+          selectedLevel: s.selectedLevel,
+          settings: s.settings,
+          streak: s.streak,
+          lastStudyDate: s.lastStudyDate,
+          totalWordsLearned: s.totalWordsLearned,
+          recentLessonIds: s.recentLessonIds,
+          levelProgress: s.levelProgress,
+          completedLessonIds: s.completedLessonIds,
+          passedQuizLessonIds: s.passedQuizLessonIds,
+          perfectQuizCount: s.perfectQuizCount,
+          xp: s.xp,
+          dailyXp: s.dailyXp,
+          dailyXpDate: s.dailyXpDate,
+          dailyGoalTier: s.dailyGoalTier,
+          hearts: s.hearts,
+          lastHeartRegenAt: s.lastHeartRegenAt,
+          srsRecords: s.srsRecords,
+          unlockedAchievements: s.unlockedAchievements,
+          activeLessonSession: s.activeLessonSession,
+        };
+      },
+
+      resetProgress: () => set(createDefaultAppState()),
+}));
 
 export function getTargetLangFromPair(pair: LanguagePair): "de" | "en" {
   return pair.split("-")[1] as "de" | "en";

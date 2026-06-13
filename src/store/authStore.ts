@@ -1,222 +1,117 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { isRootAdmin, resolveUserRole } from "@/lib/admin";
-import { bootstrapLocalRootAdmin } from "@/lib/auth/bootstrapLocalAdmin";
-import { syncAuthSession } from "@/lib/auth/syncSession";
-import type { ProfileUpdateData, SignUpData, User, UserRole } from "@/types";
+import type { ProfileUpdateData, SignUpData, User } from "@/types";
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  users: User[];
-  login: (email: string, password: string) => boolean;
-  signup: (data: SignUpData) => boolean;
-  logout: () => void;
-  updateProfile: (data: ProfileUpdateData) => void;
-  setUserRole: (userId: string, role: UserRole) => boolean;
-  applyServerRole: (userId: string, role: UserRole) => void;
-  syncUserFromServer: (directoryUser: {
-    id: string;
-    email: string;
-    role: UserRole;
-    name?: string;
-  }) => void;
+  hydrated: boolean;
+  fetchSession: () => Promise<User | null>;
+  login: (email: string, password: string) => Promise<boolean>;
+  signup: (data: SignUpData) => Promise<boolean>;
+  logout: () => Promise<void>;
+  updateProfile: (data: ProfileUpdateData) => Promise<boolean>;
 }
 
-function generateId(): string {
-  return `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  hydrated: false,
 
-function withResolvedRole(user: User): User {
-  return {
-    ...user,
-    role: resolveUserRole(user.email, user.role),
-  };
-}
+  fetchSession: async () => {
+    try {
+      const res = await fetch("/api/auth/me", {
+        credentials: "include",
+        cache: "no-store",
+      });
 
-function migrateUser(user: User): User {
-  const role = resolveUserRole(user.email, user.role ?? "USER");
-  return { ...user, role };
-}
+      if (!res.ok) {
+        set({ user: null, isAuthenticated: false, hydrated: true });
+        return null;
+      }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      users: [],
-
-      login: (email, password) => {
-        if (process.env.NODE_ENV === "development") {
-          set((state) => ({
-            users: bootstrapLocalRootAdmin(state.users.map(migrateUser)),
-          }));
-        }
-
-        const normalizedEmail = email.trim().toLowerCase();
-        const normalizedPassword = password.trim();
-
-        const found = get().users.find(
-          (u) =>
-            u.email.toLowerCase() === normalizedEmail &&
-            u.password === normalizedPassword
-        );
-        if (!found) return false;
-        const user = withResolvedRole(found);
-        set({
-          user,
-          isAuthenticated: true,
-          users: get().users.map((u) =>
-            u.id === user.id ? user : migrateUser(u)
-          ),
-        });
-        return true;
-      },
-
-      signup: (data) => {
-        const exists = get().users.some(
-          (u) => u.email.toLowerCase() === data.email.toLowerCase()
-        );
-        if (exists) return false;
-
-        const newUser: User = withResolvedRole({
-          id: generateId(),
-          name: data.name,
-          email: data.email,
-          password: data.password,
-          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.name)}`,
-          targetLanguage: data.targetLanguage,
-          createdAt: new Date().toISOString(),
-          role: isRootAdmin(data.email) ? "ADMIN" : "USER",
-        });
-
-        set((state) => ({
-          users: [...state.users, newUser],
-          user: newUser,
-          isAuthenticated: true,
-        }));
-        return true;
-      },
-
-      logout: () => {
-        set({ user: null, isAuthenticated: false });
-        void syncAuthSession(null);
-      },
-
-      updateProfile: (data) => {
-        const current = get().user;
-        if (!current) return;
-
-        const updated = withResolvedRole({
-          ...current,
-          name: data.name ?? current.name,
-          avatarUrl: data.avatarUrl ?? current.avatarUrl,
-          password: data.password ?? current.password,
-          targetLanguage: data.targetLanguage ?? current.targetLanguage,
-        });
-
-        set((state) => ({
-          user: updated,
-          users: state.users.map((u) =>
-            u.id === updated.id ? updated : migrateUser(u)
-          ),
-        }));
-      },
-
-      setUserRole: (userId, role) => {
-        const actor = get().user;
-        if (!actor || !isRootAdmin(actor.email)) return false;
-
-        const target = get().users.find((u) => u.id === userId);
-        if (!target || isRootAdmin(target.email)) return false;
-
-        const nextRole: UserRole = role === "MODERATOR" ? "MODERATOR" : "USER";
-
-        set((state) => ({
-          users: state.users.map((u) =>
-            u.id === userId ? { ...u, role: nextRole } : migrateUser(u)
-          ),
-          user:
-            state.user?.id === userId
-              ? { ...state.user, role: nextRole }
-              : state.user,
-        }));
-        return true;
-      },
-
-      applyServerRole: (userId, role) => {
-        const nextRole: UserRole =
-          role === "MODERATOR" ? "MODERATOR" : role === "ADMIN" ? "ADMIN" : "USER";
-
-        set((state) => ({
-          users: state.users.map((u) =>
-            u.id === userId
-              ? { ...u, role: resolveUserRole(u.email, nextRole) }
-              : migrateUser(u)
-          ),
-          user:
-            state.user?.id === userId
-              ? {
-                  ...state.user,
-                  role: resolveUserRole(state.user.email, nextRole),
-                }
-              : state.user,
-        }));
-      },
-
-      syncUserFromServer: (directoryUser) => {
-        const role = resolveUserRole(directoryUser.email, directoryUser.role);
-        const name = directoryUser.name;
-
-        set((state) => {
-          if (state.user?.id !== directoryUser.id) {
-            return state;
-          }
-
-          const roleUnchanged = state.user.role === role;
-          const nameUnchanged =
-            !name || state.user.name === name;
-
-          if (roleUnchanged && nameUnchanged) {
-            return state;
-          }
-
-          const users = state.users.map((u) =>
-            u.id === directoryUser.id
-              ? {
-                  ...u,
-                  role,
-                  name: name ?? u.name,
-                }
-              : migrateUser(u)
-          );
-
-          const user = {
-            ...state.user,
-            role,
-            name: name ?? state.user.name,
-          };
-
-          return { users, user };
-        });
-      },
-    }),
-    {
-      name: "lingua-auth",
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-        users: state.users,
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        state.users = bootstrapLocalRootAdmin(state.users.map(migrateUser));
-        if (state.user) {
-          state.user = migrateUser(state.user);
-        }
-      },
+      const data = (await res.json()) as { user: User };
+      set({ user: data.user, isAuthenticated: true, hydrated: true });
+      return data.user;
+    } catch {
+      set({ user: null, isAuthenticated: false, hydrated: true });
+      return null;
     }
-  )
-);
+  },
+
+  login: async (email, password) => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      if (!res.ok) return false;
+
+      const data = (await res.json()) as { user: User };
+      set({ user: data.user, isAuthenticated: true, hydrated: true });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  signup: async (data) => {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) return false;
+
+      const payload = (await res.json()) as { user: User };
+      set({ user: payload.user, isAuthenticated: true, hydrated: true });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await fetch("/api/auth/session", {
+        method: "DELETE",
+        credentials: "include",
+      });
+    } catch {
+      // ignore
+    }
+    set({ user: null, isAuthenticated: false });
+  },
+
+  updateProfile: async (data) => {
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          avatarUrl: data.avatarUrl,
+          targetLanguage: data.targetLanguage,
+          password: data.password || undefined,
+          currentPassword: data.currentPassword,
+        }),
+      });
+
+      if (!res.ok) return false;
+
+      const payload = (await res.json()) as { user: User };
+      set({ user: payload.user, isAuthenticated: true });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+}));

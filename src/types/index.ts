@@ -34,12 +34,13 @@ export interface User {
   name: string;
   email: string;
   avatarUrl: string;
-  password: string;
   targetLanguage: TargetLanguage;
   createdAt: string;
   /** Hidden from settings UI — managed in admin panel only */
   role: UserRole;
 }
+
+export type PublicUser = User;
 
 /** Legacy UI/dictionary shape — curriculum source uses `CurriculumWord` */
 export interface Word {
@@ -165,6 +166,7 @@ export interface ProfileUpdateData {
   name?: string;
   avatarUrl?: string;
   password?: string;
+  currentPassword?: string;
   targetLanguage?: TargetLanguage;
 }
 

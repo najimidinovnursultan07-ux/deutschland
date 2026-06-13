@@ -4,94 +4,54 @@ import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
 
-function progressFingerprint(
-  xp: number,
-  dailyXp: number,
-  passedLessonCount: number,
-  name: string,
-  avatarUrl: string
-): string {
-  return `${xp}|${dailyXp}|${passedLessonCount}|${name}|${avatarUrl}`;
-}
-
-/** Pushes real XP / lesson progress to the server for the global leaderboard */
+/** Debounced full progress sync to the server */
 export function ProgressSync() {
-  const userId = useAuthStore((s) => s.user?.id);
-  const userName = useAuthStore((s) => s.user?.name);
-  const userAvatar = useAuthStore((s) => s.user?.avatarUrl);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const xp = useAppStore((s) => s.xp);
-  const dailyXp = useAppStore((s) => s.dailyXp);
-  const passedLessonCount = useAppStore((s) => s.passedQuizLessonIds.length);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const exportPersistedState = useAppStore((s) => s.exportPersistedState);
+
+  const snapshot = useAppStore((s) =>
+    JSON.stringify({
+      xp: s.xp,
+      dailyXp: s.dailyXp,
+      passed: s.passedQuizLessonIds.length,
+      hearts: s.hearts,
+      streak: s.streak,
+      pair: s.languagePair,
+      level: s.selectedLevel,
+      session: s.activeLessonSession?.lessonId ?? null,
+    })
+  );
 
   const lastSyncedRef = useRef<string | null>(null);
-  const inFlightRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (
-      !isAuthenticated ||
-      !userId ||
-      !userName ||
-      userAvatar === undefined
-    ) {
+    if (!hydrated || !isAuthenticated) {
       lastSyncedRef.current = null;
       return;
     }
 
-    const key = progressFingerprint(
-      xp,
-      dailyXp,
-      passedLessonCount,
-      userName,
-      userAvatar
-    );
+    if (lastSyncedRef.current === snapshot) return;
 
-    if (lastSyncedRef.current === key || inFlightRef.current) {
-      return;
-    }
+    if (timerRef.current) clearTimeout(timerRef.current);
 
-    // Skip sync for inactive accounts (no lessons, no XP)
-    if (xp <= 0 && passedLessonCount <= 0) {
-      lastSyncedRef.current = key;
-      return;
-    }
-
-    inFlightRef.current = true;
-    let cancelled = false;
-
-    void fetch("/api/progress/sync", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: userName,
-        avatarUrl: userAvatar,
-        xp,
-        dailyXp,
-        passedLessonCount,
-      }),
-    })
-      .then((res) => {
-        if (!cancelled && res.ok) {
-          lastSyncedRef.current = key;
-        }
-      })
-      .finally(() => {
-        inFlightRef.current = false;
+    timerRef.current = setTimeout(() => {
+      const state = exportPersistedState();
+      void fetch("/api/progress", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state }),
+      }).then((res) => {
+        if (res.ok) lastSyncedRef.current = snapshot;
       });
+    }, 800);
 
     return () => {
-      cancelled = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [
-    isAuthenticated,
-    userId,
-    userName,
-    userAvatar,
-    xp,
-    dailyXp,
-    passedLessonCount,
-  ]);
+  }, [hydrated, isAuthenticated, snapshot, exportPersistedState]);
 
   return null;
 }

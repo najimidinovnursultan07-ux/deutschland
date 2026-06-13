@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AuthScreen } from "@/components/auth/AuthScreen";
-import { SessionSync } from "@/components/auth/SessionSync";
+import { AuthBootstrap } from "@/components/auth/AuthBootstrap";
 import { ProgressSync } from "@/components/auth/ProgressSync";
 import { AppShell } from "./AppShell";
 import { useAuthStore } from "@/store/authStore";
@@ -12,14 +12,15 @@ interface AuthGateProps {
 }
 
 export function AuthGate({ children }: AuthGateProps) {
+  const hydrated = useAuthStore((s) => s.hydrated);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [hydrated, setHydrated] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setHydrated(true);
+    setMounted(true);
   }, []);
 
-  if (!hydrated) {
+  if (!mounted || !hydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
@@ -29,26 +30,29 @@ export function AuthGate({ children }: AuthGateProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="relative min-h-screen">
-        <div
-          className="fixed inset-0 -z-10 bg-cover bg-center"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1526779251127-948a231b0eba?auto=format&fit=crop&w=1920&q=80')`,
-          }}
-          aria-hidden
-        />
-        <div
-          className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-950/90 via-violet-950/80 to-fuchsia-950/70"
-          aria-hidden
-        />
-        <AuthScreen />
-      </div>
+      <>
+        <AuthBootstrap />
+        <div className="relative min-h-screen">
+          <div
+            className="fixed inset-0 -z-10 bg-cover bg-center"
+            style={{
+              backgroundImage: `url('https://images.unsplash.com/photo-1526779251127-948a231b0eba?auto=format&fit=crop&w=1920&q=80')`,
+            }}
+            aria-hidden
+          />
+          <div
+            className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-950/90 via-violet-950/80 to-fuchsia-950/70"
+            aria-hidden
+          />
+          <AuthScreen />
+        </div>
+      </>
     );
   }
 
   return (
     <>
-      <SessionSync />
+      <AuthBootstrap />
       <ProgressSync />
       <AppShell>{children}</AppShell>
     </>

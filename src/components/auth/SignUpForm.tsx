@@ -19,15 +19,18 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const [password, setPassword] = useState("");
   const [targetLanguage, setTargetLanguage] = useState<TargetLanguage>("de");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (password.length < 6) {
       setError("Сырсөз кеминде 6 символ / Пароль минимум 6 символов");
       return;
     }
-    const success = signup({ name, email, password, targetLanguage });
+    setLoading(true);
+    const success = await signup({ name, email, password, targetLanguage });
+    setLoading(false);
     if (!success) {
       setError("Бул почта колдонулуп жатат / Email уже используется");
     }
@@ -45,6 +48,7 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         placeholder="Атыңыз"
         required
         autoComplete="name"
+        disabled={loading}
       />
       <Input
         label="Email"
@@ -54,6 +58,7 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         placeholder="you@example.com"
         required
         autoComplete="email"
+        disabled={loading}
       />
       <PasswordInput
         label="Сырсөз / Пароль"
@@ -62,6 +67,7 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         placeholder="••••••••"
         required
         autoComplete="new-password"
+        disabled={loading}
       />
 
       <div>
@@ -74,6 +80,7 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
               key={lang}
               type="button"
               onClick={() => setTargetLanguage(lang)}
+              disabled={loading}
               className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${
                 targetLanguage === lang
                   ? "border-violet-400 bg-violet-500/30 text-white"
@@ -92,9 +99,9 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
         </p>
       )}
 
-      <Button type="submit" className="w-full" size="lg">
+      <Button type="submit" className="w-full" size="lg" disabled={loading}>
         <UserPlus size={18} />
-        Катталуу / Регистрация
+        {loading ? "..." : "Катталуу / Регистрация"}
       </Button>
 
       <p className="text-center text-sm text-white/50">
@@ -103,6 +110,7 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
           type="button"
           onClick={onSwitchToLogin}
           className="font-medium text-violet-300 hover:text-violet-200"
+          disabled={loading}
         >
           Кирүү / Войти
         </button>

@@ -68,3 +68,46 @@ export async function writeJsonArray<T>(key: string, items: T[]): Promise<void> 
   await ensureFileStore(filePath);
   await fs.writeFile(filePath, JSON.stringify(items, null, 2), "utf8");
 }
+
+async function ensureObjectFileStore(filePath: string): Promise<void> {
+  const dir = path.dirname(filePath);
+  await fs.mkdir(dir, { recursive: true });
+  try {
+    await fs.access(filePath);
+  } catch {
+    await fs.writeFile(filePath, "{}", "utf8");
+  }
+}
+
+export async function readJsonObject<T extends Record<string, unknown>>(
+  key: string
+): Promise<T> {
+  if (isRedisConfigured()) {
+    const redis = createRedisClient();
+    const raw = await redis.get<T>(key);
+    return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : ({} as T);
+  }
+
+  const filePath = getFilePath(key);
+  await ensureObjectFileStore(filePath);
+  const raw = await fs.readFile(filePath, "utf8");
+  const parsed = JSON.parse(raw) as T;
+  return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? parsed
+    : ({} as T);
+}
+
+export async function writeJsonObject<T extends Record<string, unknown>>(
+  key: string,
+  value: T
+): Promise<void> {
+  if (isRedisConfigured()) {
+    const redis = createRedisClient();
+    await redis.set(key, value);
+    return;
+  }
+
+  const filePath = getFilePath(key);
+  await ensureObjectFileStore(filePath);
+  await fs.writeFile(filePath, JSON.stringify(value, null, 2), "utf8");
+}

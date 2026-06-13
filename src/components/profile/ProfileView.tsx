@@ -6,6 +6,7 @@ import { AchievementGallery } from "@/components/gamification/AchievementGallery
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { getUiString } from "@/lib/constants";
 import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
@@ -23,20 +24,46 @@ export function ProfileView() {
   const [name, setName] = useState(user?.name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? "");
   const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState<TargetLanguage>(
     user?.targetLanguage ?? "de"
   );
 
   if (!user) return null;
 
-  const handleSave = () => {
-    updateProfile({
+  const handleSave = async () => {
+    if (password && !currentPassword) {
+      setSaveError(
+        interfaceLang === "ky"
+          ? "Азыркы сырсөздү киргизиңиз"
+          : "Введите текущий пароль"
+      );
+      return;
+    }
+
+    setSaveError("");
+    setSaving(true);
+    const ok = await updateProfile({
       name,
       avatarUrl,
       targetLanguage,
-      ...(password ? { password } : {}),
+      ...(password ? { password, currentPassword } : {}),
     });
+    setSaving(false);
+
+    if (!ok) {
+      setSaveError(
+        interfaceLang === "ky"
+          ? "Сактоо ийгиликсиз / Туура эмес сырсөз"
+          : "Не удалось сохранить / Неверный пароль"
+      );
+      return;
+    }
+
     setPassword("");
+    setCurrentPassword("");
     setIsEditing(false);
   };
 
@@ -44,6 +71,8 @@ export function ProfileView() {
     setName(user.name);
     setAvatarUrl(user.avatarUrl);
     setPassword("");
+    setCurrentPassword("");
+    setSaveError("");
     setTargetLanguage(user.targetLanguage);
     setIsEditing(false);
   };
@@ -111,10 +140,23 @@ export function ProfileView() {
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
               placeholder="https://..."
+              disabled={saving}
             />
-            <Input
+            {password ? (
+              <PasswordInput
+                label={
+                  interfaceLang === "ky"
+                    ? "Азыркы сырсөз"
+                    : "Текущий пароль"
+                }
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+                disabled={saving}
+              />
+            ) : null}
+            <PasswordInput
               label={getUiString(interfaceLang, "password")}
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={
@@ -122,6 +164,8 @@ export function ProfileView() {
                   ? "Жаңы сырсөз (бош калтырсаңыз болот)"
                   : "Новый пароль (оставьте пустым)"
               }
+              autoComplete="new-password"
+              disabled={saving}
             />
             <div>
               <label className="mb-1.5 block text-sm font-medium text-white/80">
@@ -144,9 +188,14 @@ export function ProfileView() {
                 ))}
               </div>
             </div>
+            {saveError && (
+              <p className="rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">
+                {saveError}
+              </p>
+            )}
             <div className="flex gap-3 pt-2">
-              <Button className="flex-1" onClick={handleSave}>
-                {getUiString(interfaceLang, "save")}
+              <Button className="flex-1" onClick={handleSave} disabled={saving}>
+                {saving ? "..." : getUiString(interfaceLang, "save")}
               </Button>
               <Button
                 variant="ghost"
