@@ -8,10 +8,20 @@ import { syncAuthSession } from "@/lib/auth/syncSession";
 export function SessionSync() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const syncUserFromServer = useAuthStore((s) => s.syncUserFromServer);
 
   useEffect(() => {
-    void syncAuthSession(isAuthenticated ? user : null);
-  }, [isAuthenticated, user]);
+    if (!isAuthenticated || !user) {
+      void syncAuthSession(null);
+      return;
+    }
+
+    void syncAuthSession(user).then((directoryUser) => {
+      if (directoryUser) {
+        syncUserFromServer(directoryUser);
+      }
+    });
+  }, [isAuthenticated, user, syncUserFromServer]);
 
   return null;
 }

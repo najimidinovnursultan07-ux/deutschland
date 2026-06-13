@@ -19,12 +19,21 @@ export function useSuggestionsInbox() {
     setError(null);
 
     try {
-      const res = await fetch("/api/suggestions", { credentials: "include" });
+      const res = await fetch("/api/suggestions", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = (await res.json().catch(() => null)) as {
+        suggestions?: UserSuggestion[];
+        error?: string;
+      } | null;
+
       if (!res.ok) {
-        throw new Error(`Failed to load suggestions (${res.status})`);
+        throw new Error(data?.error ?? `Failed (${res.status})`);
       }
-      const data = (await res.json()) as { suggestions: UserSuggestion[] };
-      setSuggestions(data.suggestions ?? []);
+
+      setSuggestions(data?.suggestions ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setSuggestions([]);

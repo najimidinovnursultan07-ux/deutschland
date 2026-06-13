@@ -20,7 +20,10 @@ export async function GET(request: Request) {
     }
 
     const suggestions = await listSuggestions();
-    return NextResponse.json({ suggestions });
+    return NextResponse.json(
+      { suggestions },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     console.error("[GET /api/suggestions]", error);
     return NextResponse.json(

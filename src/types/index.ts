@@ -9,6 +9,16 @@ export type DailyGoalTier = "casual" | "serious" | "insane";
 
 export type UserRole = "USER" | "MODERATOR" | "ADMIN";
 
+/** Public user row for admin directory (no password) */
+export interface DirectoryUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UserSuggestion {
   id: string;
   userId: string;

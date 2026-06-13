@@ -15,6 +15,13 @@ interface AuthState {
   logout: () => void;
   updateProfile: (data: ProfileUpdateData) => void;
   setUserRole: (userId: string, role: UserRole) => boolean;
+  applyServerRole: (userId: string, role: UserRole) => void;
+  syncUserFromServer: (directoryUser: {
+    id: string;
+    email: string;
+    role: UserRole;
+    name?: string;
+  }) => void;
 }
 
 function generateId(): string {
@@ -55,7 +62,11 @@ export const useAuthStore = create<AuthState>()(
             u.id === user.id ? user : migrateUser(u)
           ),
         });
-        void syncAuthSession(user);
+        void syncAuthSession(user).then((directoryUser) => {
+          if (directoryUser) {
+            get().syncUserFromServer(directoryUser);
+          }
+        });
         return true;
       },
 
@@ -81,7 +92,11 @@ export const useAuthStore = create<AuthState>()(
           user: newUser,
           isAuthenticated: true,
         }));
-        void syncAuthSession(newUser);
+        void syncAuthSession(newUser).then((directoryUser) => {
+          if (directoryUser) {
+            get().syncUserFromServer(directoryUser);
+          }
+        });
         return true;
       },
 
@@ -129,6 +144,52 @@ export const useAuthStore = create<AuthState>()(
               : state.user,
         }));
         return true;
+      },
+
+      applyServerRole: (userId, role) => {
+        const nextRole: UserRole =
+          role === "MODERATOR" ? "MODERATOR" : role === "ADMIN" ? "ADMIN" : "USER";
+
+        set((state) => ({
+          users: state.users.map((u) =>
+            u.id === userId
+              ? { ...u, role: resolveUserRole(u.email, nextRole) }
+              : migrateUser(u)
+          ),
+          user:
+            state.user?.id === userId
+              ? {
+                  ...state.user,
+                  role: resolveUserRole(state.user.email, nextRole),
+                }
+              : state.user,
+        }));
+      },
+
+      syncUserFromServer: (directoryUser) => {
+        const role = resolveUserRole(directoryUser.email, directoryUser.role);
+
+        set((state) => {
+          const exists = state.users.some((u) => u.id === directoryUser.id);
+          const users = exists
+            ? state.users.map((u) =>
+                u.id === directoryUser.id
+                  ? { ...u, role, name: directoryUser.name ?? u.name }
+                  : migrateUser(u)
+              )
+            : state.users;
+
+          const user =
+            state.user?.id === directoryUser.id
+              ? {
+                  ...state.user,
+                  role,
+                  name: directoryUser.name ?? state.user.name,
+                }
+              : state.user;
+
+          return { users, user };
+        });
       },
     }),
     {
