@@ -137,18 +137,6 @@ export interface AchievementState {
   perfectQuizCount: number;
 }
 
-export const MOCK_LEADERBOARD = [
-  { id: "lb1", name: "Айгүл К.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aigul", weeklyXp: 1240, country: "🇰🇬" },
-  { id: "lb2", name: "Max W.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=MaxW", weeklyXp: 1180, country: "🇩🇪" },
-  { id: "lb3", name: "Светлана М.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Svetlana", weeklyXp: 1050, country: "🇷🇺" },
-  { id: "lb4", name: "Nursultan B.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nurs", weeklyXp: 980, country: "🇰🇬" },
-  { id: "lb5", name: "Emma L.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=EmmaL", weeklyXp: 920, country: "🇬🇧" },
-  { id: "lb6", name: "Дмитрий П.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Dmitry", weeklyXp: 870, country: "🇷🇺" },
-  { id: "lb7", name: "Aizada T.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aizada", weeklyXp: 810, country: "🇰🇬" },
-  { id: "lb8", name: "Hans K.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=HansK", weeklyXp: 760, country: "🇩🇪" },
-  { id: "lb9", name: "Olivia R.", avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia", weeklyXp: 700, country: "🇺🇸" },
-];
-
 export const PHONETIC_TIPS = [
   {
     id: "de-oe",

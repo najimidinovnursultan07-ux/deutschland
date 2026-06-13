@@ -27,6 +27,16 @@ export interface UserSuggestion {
   createdAt: string;
 }
 
+export interface LeaderboardEntry {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  weeklyXp: number;
+  totalXp: number;
+  passedLessonCount: number;
+  isCurrentUser?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -123,15 +133,6 @@ export interface Achievement {
   descriptionRu: string;
   icon: string;
   xpReward: number;
-}
-
-export interface LeaderboardEntry {
-  id: string;
-  name: string;
-  avatarUrl: string;
-  weeklyXp: number;
-  country: string;
-  isCurrentUser?: boolean;
 }
 
 export interface AppState {

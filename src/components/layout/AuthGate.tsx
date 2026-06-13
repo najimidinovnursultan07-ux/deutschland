@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { SessionSync } from "@/components/auth/SessionSync";
+import { ProgressSync } from "@/components/auth/ProgressSync";
 import { AppShell } from "./AppShell";
 import { useAuthStore } from "@/store/authStore";
 
@@ -48,6 +49,7 @@ export function AuthGate({ children }: AuthGateProps) {
   return (
     <>
       <SessionSync />
+      <ProgressSync />
       <AppShell>{children}</AppShell>
     </>
   );
