@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isRootAdmin, resolveUserRole } from "@/lib/admin";
+import { bootstrapLocalRootAdmin } from "@/lib/auth/bootstrapLocalAdmin";
 import { syncAuthSession } from "@/lib/auth/syncSession";
 import type { ProfileUpdateData, SignUpData, User, UserRole } from "@/types";
 
@@ -48,10 +49,19 @@ export const useAuthStore = create<AuthState>()(
       users: [],
 
       login: (email, password) => {
+        if (process.env.NODE_ENV === "development") {
+          set((state) => ({
+            users: bootstrapLocalRootAdmin(state.users.map(migrateUser)),
+          }));
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedPassword = password.trim();
+
         const found = get().users.find(
           (u) =>
-            u.email.toLowerCase() === email.toLowerCase() &&
-            u.password === password
+            u.email.toLowerCase() === normalizedEmail &&
+            u.password === normalizedPassword
         );
         if (!found) return false;
         const user = withResolvedRole(found);
@@ -202,7 +212,7 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        state.users = state.users.map(migrateUser);
+        state.users = bootstrapLocalRootAdmin(state.users.map(migrateUser));
         if (state.user) {
           state.user = migrateUser(state.user);
         }

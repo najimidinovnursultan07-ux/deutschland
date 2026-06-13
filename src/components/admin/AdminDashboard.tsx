@@ -6,12 +6,15 @@ import { getUiString } from "@/lib/constants";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { UserManagementPanel } from "./UserManagementPanel";
-import { SuggestionsInbox } from "./SuggestionsInbox";
 
 export function AdminDashboard() {
   const interfaceLang = useInterfaceLang();
   const user = useAuthStore((s) => s.user);
   const canManage = canManageUsers(user);
+
+  if (!canManage) {
+    return null;
+  }
 
   return (
     <PageContainer className="space-y-8 py-6">
@@ -24,8 +27,7 @@ export function AdminDashboard() {
         </p>
       </header>
 
-      {canManage && <UserManagementPanel />}
-      <SuggestionsInbox />
+      <UserManagementPanel />
     </PageContainer>
   );
 }

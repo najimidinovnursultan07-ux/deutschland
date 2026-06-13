@@ -19,14 +19,6 @@ export interface DirectoryUser {
   updatedAt: string;
 }
 
-export interface UserSuggestion {
-  id: string;
-  userId: string;
-  userEmail: string;
-  text: string;
-  createdAt: string;
-}
-
 export interface LeaderboardEntry {
   id: string;
   name: string;

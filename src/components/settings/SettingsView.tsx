@@ -12,7 +12,6 @@ import { Toggle } from "@/components/ui/Toggle";
 import { LanguagePairSwitcher } from "@/components/layout/LanguagePairSwitcher";
 import { SupportAccordion } from "./SupportAccordion";
 import { SuggestionForm } from "./SuggestionForm";
-import { ModeratorSettingsPanel } from "./ModeratorSettingsPanel";
 import { RootAdminSettingsPanel } from "./RootAdminSettingsPanel";
 import { getUiString } from "@/lib/constants";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
@@ -22,7 +21,6 @@ import {
 } from "@/store/appStore";
 import { useAuthStore } from "@/store/authStore";
 import { isRootAdmin } from "@/lib/admin";
-import { isAuthorizedToViewSuggestions } from "@/lib/suggestions/auth";
 import type { LanguagePair, Theme } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +32,6 @@ export function SettingsView() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const setLanguagePair = useAppStore((s) => s.setLanguagePair);
 
-  const showModeratorPanel = isAuthorizedToViewSuggestions(currentUser);
   const showRootAdminPanel =
     !!currentUser && isRootAdmin(currentUser.email);
 
@@ -143,7 +140,6 @@ export function SettingsView() {
         <SupportAccordion interfaceLang={interfaceLang} />
       </GlassCard>
 
-      {showModeratorPanel && <ModeratorSettingsPanel />}
       {showRootAdminPanel && <RootAdminSettingsPanel />}
     </div>
   );

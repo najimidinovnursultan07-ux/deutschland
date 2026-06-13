@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useAuthStore } from "@/store/authStore";
 
 interface LoginFormProps {
@@ -39,9 +40,8 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
         required
         autoComplete="email"
       />
-      <Input
+      <PasswordInput
         label="Сырсөз / Пароль"
-        type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="••••••••"

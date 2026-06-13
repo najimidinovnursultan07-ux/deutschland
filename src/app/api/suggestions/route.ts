@@ -1,37 +1,9 @@
 import { NextResponse } from "next/server";
 import { readSessionFromCookieHeader } from "@/lib/auth/session";
-import { isAuthorizedToViewSuggestionsByClaims } from "@/lib/suggestions/auth";
-import { addSuggestion, listSuggestions } from "@/lib/suggestions/repository";
+import { sendSuggestionToTelegram } from "@/lib/telegram/notifications";
 
 export const runtime = "nodejs";
-
-export async function GET(request: Request) {
-  try {
-    const session = readSessionFromCookieHeader(request.headers.get("cookie"));
-
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (
-      !isAuthorizedToViewSuggestionsByClaims(session.email, session.role)
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const suggestions = await listSuggestions();
-    return NextResponse.json(
-      { suggestions },
-      { headers: { "Cache-Control": "no-store" } }
-    );
-  } catch (error) {
-    console.error("[GET /api/suggestions]", error);
-    return NextResponse.json(
-      { error: "Failed to load suggestions" },
-      { status: 500 }
-    );
-  }
-}
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
@@ -48,17 +20,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
-    const suggestion = await addSuggestion({
-      userId: session.id,
-      userEmail: session.email,
-      text,
-    });
+    await sendSuggestionToTelegram(session.email, text);
 
-    return NextResponse.json({ suggestion }, { status: 201 });
+    return NextResponse.json({ ok: true }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/suggestions]", error);
     return NextResponse.json(
-      { error: "Failed to save suggestion" },
+      { error: "Failed to send suggestion" },
       { status: 500 }
     );
   }
