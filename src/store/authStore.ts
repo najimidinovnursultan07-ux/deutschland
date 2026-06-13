@@ -62,11 +62,6 @@ export const useAuthStore = create<AuthState>()(
             u.id === user.id ? user : migrateUser(u)
           ),
         });
-        void syncAuthSession(user).then((directoryUser) => {
-          if (directoryUser) {
-            get().syncUserFromServer(directoryUser);
-          }
-        });
         return true;
       },
 
@@ -92,11 +87,6 @@ export const useAuthStore = create<AuthState>()(
           user: newUser,
           isAuthenticated: true,
         }));
-        void syncAuthSession(newUser).then((directoryUser) => {
-          if (directoryUser) {
-            get().syncUserFromServer(directoryUser);
-          }
-        });
         return true;
       },
 
@@ -168,25 +158,36 @@ export const useAuthStore = create<AuthState>()(
 
       syncUserFromServer: (directoryUser) => {
         const role = resolveUserRole(directoryUser.email, directoryUser.role);
+        const name = directoryUser.name;
 
         set((state) => {
-          const exists = state.users.some((u) => u.id === directoryUser.id);
-          const users = exists
-            ? state.users.map((u) =>
-                u.id === directoryUser.id
-                  ? { ...u, role, name: directoryUser.name ?? u.name }
-                  : migrateUser(u)
-              )
-            : state.users;
+          if (state.user?.id !== directoryUser.id) {
+            return state;
+          }
 
-          const user =
-            state.user?.id === directoryUser.id
+          const roleUnchanged = state.user.role === role;
+          const nameUnchanged =
+            !name || state.user.name === name;
+
+          if (roleUnchanged && nameUnchanged) {
+            return state;
+          }
+
+          const users = state.users.map((u) =>
+            u.id === directoryUser.id
               ? {
-                  ...state.user,
+                  ...u,
                   role,
-                  name: directoryUser.name ?? state.user.name,
+                  name: name ?? u.name,
                 }
-              : state.user;
+              : migrateUser(u)
+          );
+
+          const user = {
+            ...state.user,
+            role,
+            name: name ?? state.user.name,
+          };
 
           return { users, user };
         });
