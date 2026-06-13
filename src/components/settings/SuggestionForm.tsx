@@ -32,7 +32,17 @@ export function SuggestionForm() {
       });
 
       if (!res.ok) {
-        throw new Error(`Submit failed (${res.status})`);
+        const payload = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        const message =
+          payload?.error ??
+          (res.status === 401
+            ? interfaceLang === "ky"
+              ? "Кайра кириңиз"
+              : "Войдите снова"
+            : `Submit failed (${res.status})`);
+        throw new Error(message);
       }
 
       setText("");
