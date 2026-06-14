@@ -2,7 +2,6 @@
 
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { PwaProvider } from "@/context/PwaContext";
-import { InstallPwaBanner } from "@/components/pwa/InstallPwaBanner";
 import { ServiceWorkerUpdater } from "@/components/pwa/ServiceWorkerUpdater";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -10,7 +9,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <LanguageProvider>
       <PwaProvider>
         <ServiceWorkerUpdater />
-        <InstallPwaBanner />
         {children}
       </PwaProvider>
     </LanguageProvider>
