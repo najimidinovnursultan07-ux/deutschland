@@ -50,6 +50,8 @@ export const ruMessages: MessageTree = {
     emailNotFound: "Аккаунт с этим email не найден. Перейдите на вкладку «Регистрация».",
     wrongPassword: "Неверный пароль",
     serverError: "Ошибка сервера, попробуйте позже",
+    storageError:
+      "Сервер не настроен. Подключите базу Redis в настройках Vercel.",
     networkError: "Ошибка сети, попробуйте позже",
     emailAlreadyRegistered: "Этот email уже зарегистрирован",
     passwordMinLength: "Пароль минимум 6 символов",

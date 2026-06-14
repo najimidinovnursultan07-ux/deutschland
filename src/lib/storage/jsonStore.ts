@@ -9,14 +9,50 @@ export class PersistentStorageError extends Error {
   }
 }
 
+function cleanEnv(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
+  return trimmed || undefined;
+}
+
 function getRedisUrl(): string | undefined {
-  return process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  return (
+    cleanEnv(process.env.UPSTASH_REDIS_REST_URL) ??
+    cleanEnv(process.env.KV_REST_API_URL) ??
+    cleanEnv(process.env.KV_URL)
+  );
 }
 
 function getRedisToken(): string | undefined {
   return (
-    process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN
+    cleanEnv(process.env.UPSTASH_REDIS_REST_TOKEN) ??
+    cleanEnv(process.env.KV_REST_API_TOKEN)
   );
+}
+
+export function getStorageDiagnostics(): {
+  vercel: boolean;
+  redisConfigured: boolean;
+  sessionSecretConfigured: boolean;
+  missing: string[];
+} {
+  const missing: string[] = [];
+
+  if (!isRedisConfigured()) {
+    missing.push("UPSTASH_REDIS_REST_URL");
+    missing.push("UPSTASH_REDIS_REST_TOKEN");
+  }
+
+  if (!cleanEnv(process.env.SESSION_SECRET)) {
+    missing.push("SESSION_SECRET");
+  }
+
+  return {
+    vercel: process.env.VERCEL === "1",
+    redisConfigured: isRedisConfigured(),
+    sessionSecretConfigured: Boolean(cleanEnv(process.env.SESSION_SECRET)),
+    missing,
+  };
 }
 
 export function isRedisConfigured(): boolean {

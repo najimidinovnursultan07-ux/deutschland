@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useAuthStore } from "@/store/authStore";
+import { resolveAuthFormError } from "@/lib/auth/resolveAuthFormError";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { TargetLanguage, User } from "@/types";
 
@@ -48,7 +49,8 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || "Ошибка авторизации");
+        setError(resolveAuthFormError(t, response.status, data));
+        return;
       }
 
       const user = data.user as User | undefined;
@@ -61,11 +63,7 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
       }
     } catch (err: unknown) {
       console.error("Ошибка при запросе:", err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Ошибка сервера, попробуйте позже";
-      setError(message || "Ошибка сервера, попробуйте позже");
+      setError(t("auth.networkError"));
     } finally {
       setLoading(false);
     }

@@ -50,6 +50,8 @@ export const kyMessages: MessageTree = {
     emailNotFound: "Бул email менен аккаунт табылган жок. «Катталуу» бөлүмүнө өтүңүз.",
     wrongPassword: "Туура эмес сырсөз",
     serverError: "Ката кетти, кайра аракет кылыңыз",
+    storageError:
+      "Сервер сактагычы туташкан эмес. Vercel жөндөөлөрүнө Redis базасын кошуңуз.",
     networkError: "Тармак катасы, кайра аракет кылыңыз",
     emailAlreadyRegistered: "Бул почта катталган",
     passwordMinLength: "Сырсөз кеминде 6 символ",
