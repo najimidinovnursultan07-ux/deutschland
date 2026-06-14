@@ -1,0 +1,1 @@
+!function(){let i=self;i.addEventListener("message",t=>{var e;(null===(e=t.data)||void 0===e?void 0:e.type)==="SKIP_WAITING"&&i.skipWaiting()}),i.addEventListener("install",()=>{i.skipWaiting()}),i.addEventListener("activate",t=>{t.waitUntil(i.clients.claim())})}();

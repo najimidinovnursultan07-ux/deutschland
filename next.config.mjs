@@ -15,6 +15,14 @@ const nextConfig = {
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
+  register: false,
+  reloadOnOnline: true,
+  customWorkerSrc: "worker",
+  workboxOptions: {
+    skipWaiting: true,
+    clientsClaim: true,
+    cleanupOutdatedCaches: true,
+  },
 });
 
 export default withPWA(nextConfig);
