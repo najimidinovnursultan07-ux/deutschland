@@ -7,41 +7,14 @@ import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { AuthErrorCode } from "@/lib/auth/authResult";
-import type { TargetLanguage } from "@/types";
+import type { TargetLanguage, User } from "@/types";
 
 interface SignUpFormProps {
   onSwitchToLogin: () => void;
 }
 
-function resolveSignupError(
-  t: (key: string) => string,
-  errorCode?: AuthErrorCode,
-): string {
-  switch (errorCode) {
-    case "INVALID_EMAIL":
-      return t("auth.invalidEmail");
-    case "PASSWORD_REQUIRED":
-      return t("auth.passwordRequired");
-    case "NAME_REQUIRED":
-      return t("auth.nameRequired");
-    case "PASSWORD_TOO_SHORT":
-      return t("auth.passwordMinLength");
-    case "EMAIL_EXISTS":
-      return t("auth.emailAlreadyRegistered");
-    case "SERVER_ERROR":
-    case "STORAGE_ERROR":
-      return t("auth.serverError");
-    case "NETWORK_ERROR":
-      return t("auth.networkError");
-    default:
-      return t("auth.serverError");
-  }
-}
-
 export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const { t } = useTranslation();
-  const signup = useAuthStore((s) => s.signup);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,44 +26,46 @@ export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
     e.preventDefault();
     setError("");
 
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = password.trim();
-
-    if (!trimmedName) {
-      setError(t("auth.nameRequired"));
-      return;
-    }
-
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError(t("auth.invalidEmail"));
-      return;
-    }
-
-    if (!trimmedPassword) {
-      setError(t("auth.passwordRequired"));
-      return;
-    }
-
-    if (trimmedPassword.length < 6) {
-      setError(t("auth.passwordMinLength"));
-      return;
-    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password;
 
     setLoading(true);
     try {
-      const result = await signup({
-        name: trimmedName,
-        email: trimmedEmail,
-        password: trimmedPassword,
-        targetLanguage,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password: cleanPassword,
+          name: name.trim(),
+          targetLanguage,
+        }),
       });
 
-      if (!result.success) {
-        setError(resolveSignupError(t, result.errorCode));
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Ошибка авторизации");
       }
-    } catch {
-      setError(t("auth.networkError"));
+
+      const user = data.user as User | undefined;
+      if (user) {
+        useAuthStore.setState({
+          user,
+          isAuthenticated: true,
+          hydrated: true,
+        });
+      }
+    } catch (err: unknown) {
+      console.error("Ошибка при запросе:", err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Ошибка сервера, попробуйте позже";
+      setError(message || "Ошибка сервера, попробуйте позже");
     } finally {
       setLoading(false);
     }

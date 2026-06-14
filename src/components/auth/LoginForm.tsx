@@ -7,38 +7,14 @@ import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/hooks/useTranslation";
-import type { AuthErrorCode } from "@/lib/auth/authResult";
+import type { User } from "@/types";
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
 }
 
-function resolveLoginError(
-  t: (key: string) => string,
-  errorCode?: AuthErrorCode,
-): string {
-  switch (errorCode) {
-    case "INVALID_EMAIL":
-      return t("auth.invalidEmail");
-    case "PASSWORD_REQUIRED":
-      return t("auth.passwordRequired");
-    case "EMAIL_NOT_FOUND":
-      return t("auth.emailNotFound");
-    case "WRONG_PASSWORD":
-      return t("auth.wrongPassword");
-    case "SERVER_ERROR":
-    case "STORAGE_ERROR":
-      return t("auth.serverError");
-    case "NETWORK_ERROR":
-      return t("auth.networkError");
-    default:
-      return t("auth.invalidCredentials");
-  }
-}
-
 export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const { t } = useTranslation();
-  const login = useAuthStore((s) => s.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -48,32 +24,44 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     e.preventDefault();
     setError("");
 
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = password.trim();
-
-    if (!trimmedEmail) {
-      setError(t("auth.invalidEmail"));
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError(t("auth.invalidEmail"));
-      return;
-    }
-
-    if (!trimmedPassword) {
-      setError(t("auth.passwordRequired"));
-      return;
-    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password;
 
     setLoading(true);
     try {
-      const result = await login(trimmedEmail, trimmedPassword);
-      if (!result.success) {
-        setError(resolveLoginError(t, result.errorCode));
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password: cleanPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Ошибка авторизации");
       }
-    } catch {
-      setError(t("auth.networkError"));
+
+      const user = data.user as User | undefined;
+      if (user) {
+        useAuthStore.setState({
+          user,
+          isAuthenticated: true,
+          hydrated: true,
+        });
+      }
+    } catch (err: unknown) {
+      console.error("Ошибка при запросе:", err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Ошибка сервера, попробуйте позже";
+      setError(message || "Ошибка сервера, попробуйте позже");
     } finally {
       setLoading(false);
     }
