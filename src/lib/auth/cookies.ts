@@ -4,9 +4,7 @@ import { NextResponse } from "next/server";
 
 const COOKIE_NAME = getSessionCookieName();
 
-export function attachSessionCookie(
-  user: PublicUser
-): NextResponse {
+export function attachSessionCookie(user: PublicUser): NextResponse {
   const token = createSessionToken({
     id: user.id,
     email: user.email,

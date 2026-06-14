@@ -48,7 +48,7 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     e.preventDefault();
     setError("");
 
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail) {
@@ -72,6 +72,8 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
       if (!result.success) {
         setError(resolveLoginError(t, result.errorCode));
       }
+    } catch {
+      setError(t("auth.networkError"));
     } finally {
       setLoading(false);
     }
