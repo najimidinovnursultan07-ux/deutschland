@@ -44,3 +44,6 @@ next-env.d.ts
 
 # user-submitted feedback (runtime)
 /data/suggestions.json
+
+# local dev persistence (auth, progress — do not commit)
+/data/lingua*.json

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { LoginForm } from "./LoginForm";
 import { SignUpForm } from "./SignUpForm";
@@ -13,8 +14,8 @@ export function AuthScreen() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/30">
-            <BookOpen className="h-8 w-8 text-white" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
+            <Logo size={80} className="mx-auto" />
           </div>
           <h1 className="flex items-center justify-center gap-2 text-3xl font-bold text-white">
             LinguaBridge

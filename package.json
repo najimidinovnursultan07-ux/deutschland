@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "validate:translations": "npx tsx scripts/validate-translations.mjs",
-    "generate:icons": "node scripts/generate-pwa-icons.mjs"
+    "generate:icons": "npx tsx scripts/generate-pwa-icons.ts"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

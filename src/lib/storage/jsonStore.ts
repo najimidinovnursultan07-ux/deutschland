@@ -2,6 +2,13 @@ import { Redis } from "@upstash/redis";
 import { promises as fs } from "fs";
 import path from "path";
 
+export class PersistentStorageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PersistentStorageError";
+  }
+}
+
 function getRedisUrl(): string | undefined {
   return process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
 }
@@ -16,20 +23,30 @@ export function isRedisConfigured(): boolean {
   return Boolean(getRedisUrl() && getRedisToken());
 }
 
-function createRedisClient(): Redis {
+export function isProductionDeployment(): boolean {
+  return process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+}
+
+/** Auth/progress must use Redis on Vercel — filesystem is not durable there. */
+export function assertPersistentStorage(): void {
+  if (isProductionDeployment() && !isRedisConfigured()) {
+    throw new PersistentStorageError(
+      "Persistent storage is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in your deployment environment."
+    );
+  }
+}
+
+export function createRedisClient(): Redis {
   const url = getRedisUrl();
   const token = getRedisToken();
   if (!url || !token) {
-    throw new Error("Redis credentials are not configured");
+    throw new PersistentStorageError("Redis credentials are not configured");
   }
   return new Redis({ url, token });
 }
 
 function getFilePath(key: string): string {
   const safeName = key.replace(/[^a-z0-9:_-]/gi, "_");
-  if (process.env.VERCEL) {
-    return path.join("/tmp", `${safeName}.json`);
-  }
   return path.join(process.cwd(), "data", `${safeName}.json`);
 }
 
@@ -44,6 +61,8 @@ async function ensureFileStore(filePath: string): Promise<void> {
 }
 
 export async function readJsonArray<T>(key: string): Promise<T[]> {
+  assertPersistentStorage();
+
   if (isRedisConfigured()) {
     const redis = createRedisClient();
     const raw = await redis.get<T[]>(key);
@@ -58,6 +77,8 @@ export async function readJsonArray<T>(key: string): Promise<T[]> {
 }
 
 export async function writeJsonArray<T>(key: string, items: T[]): Promise<void> {
+  assertPersistentStorage();
+
   if (isRedisConfigured()) {
     const redis = createRedisClient();
     await redis.set(key, items);
@@ -82,6 +103,8 @@ async function ensureObjectFileStore(filePath: string): Promise<void> {
 export async function readJsonObject<T extends Record<string, unknown>>(
   key: string
 ): Promise<T> {
+  assertPersistentStorage();
+
   if (isRedisConfigured()) {
     const redis = createRedisClient();
     const raw = await redis.get<T>(key);
@@ -101,6 +124,8 @@ export async function writeJsonObject<T extends Record<string, unknown>>(
   key: string,
   value: T
 ): Promise<void> {
+  assertPersistentStorage();
+
   if (isRedisConfigured()) {
     const redis = createRedisClient();
     await redis.set(key, value);

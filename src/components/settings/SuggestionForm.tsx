@@ -8,6 +8,14 @@ import { getUiString } from "@/lib/constants";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { useAuthStore } from "@/store/authStore";
 
+const MIN_WORDS = 100;
+
+function countWords(text: string): number {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).filter(Boolean).length;
+}
+
 export function SuggestionForm() {
   const interfaceLang = useInterfaceLang();
   const user = useAuthStore((s) => s.user);
@@ -16,9 +24,12 @@ export function SuggestionForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const wordCount = countWords(text);
+  const meetsMinimum = wordCount >= MIN_WORDS;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !text.trim() || submitting) return;
+    if (!user || !text.trim() || !meetsMinimum || submitting) return;
 
     setSubmitting(true);
     setError(null);
@@ -56,9 +67,9 @@ export function SuggestionForm() {
   };
 
   return (
-    <section id="suggest-idea" className="scroll-mt-4">
-      <GlassCard>
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
+    <section id="suggest-idea" className="w-full min-w-0 scroll-mt-4">
+      <GlassCard className="p-4 sm:p-6">
+        <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-white sm:text-lg">
           <MessageSquarePlus size={18} />
           {getUiString(interfaceLang, "submitSuggestion")}
         </h2>
@@ -66,10 +77,24 @@ export function SuggestionForm() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            rows={4}
+            rows={5}
             placeholder={getUiString(interfaceLang, "suggestionPlaceholder")}
             className="w-full resize-none rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-violet-400/50 focus:outline-none"
           />
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/40">
+            <span>
+              {wordCount} / {MIN_WORDS}{" "}
+              {interfaceLang === "ky" ? "сөз" : "слов"}
+            </span>
+          </div>
+          {!meetsMinimum && text.trim().length > 0 && (
+            <p
+              className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+              role="alert"
+            >
+              Сунушуңузду кененирээк жазыңыз (минимум 100 сөз болушу шарт).
+            </p>
+          )}
           {sent && (
             <p className="text-sm text-emerald-300" role="status">
               {getUiString(interfaceLang, "suggestionSent")}
@@ -83,7 +108,7 @@ export function SuggestionForm() {
           <Button
             type="submit"
             className="w-full sm:w-auto"
-            disabled={!text.trim() || submitting}
+            disabled={!text.trim() || !meetsMinimum || submitting}
           >
             {getUiString(interfaceLang, "sendSuggestion")}
           </Button>

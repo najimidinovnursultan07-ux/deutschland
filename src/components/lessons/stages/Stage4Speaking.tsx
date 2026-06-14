@@ -1,16 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Mic, MicOff, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { ListenButton } from "@/components/ui/ListenButton";
 import { getUiString } from "@/lib/constants";
 import { speechMatches } from "@/lib/lessonSentences";
-import {
-  startPronunciationPracticeSecure,
-  type MicAccessResult,
-} from "@/lib/speech";
+import { type MicAccessResult } from "@/lib/speech";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { playCorrectSound } from "@/lib/sounds";
 import type { SpeakingExercise } from "@/types";
 import type { TargetLanguage } from "@/types";
@@ -53,6 +51,7 @@ export function Stage4Speaking({
   embedded = false,
 }: Stage4SpeakingProps) {
   const exercise = exercises[index];
+  const { startListening, dispose } = useSpeechRecognition(targetLang);
   const [listening, setListening] = useState(false);
   const [result, setResult] = useState<"idle" | "success" | "fail" | "denied">(
     "idle"
@@ -63,14 +62,22 @@ export function Stage4Speaking({
   const prompt =
     interfaceLang === "ky" ? exercise.promptKy : exercise.promptRu;
 
+  useEffect(() => {
+    dispose();
+    setListening(false);
+    setResult("idle");
+    setTranscript("");
+    setErrorDetail(null);
+  }, [index, exercise.id, dispose]);
+
   const handleMic = useCallback(async () => {
+    dispose();
     setListening(true);
     setResult("idle");
     setTranscript("");
     setErrorDetail(null);
 
-    const stop = await startPronunciationPracticeSecure(
-      targetLang,
+    const started = await startListening(
       (spoken) => {
         setTranscript(spoken);
         setListening(false);
@@ -89,15 +96,14 @@ export function Stage4Speaking({
       }
     );
 
-    if (!stop) {
+    if (!started) {
       setListening(false);
       setResult("denied");
-      setErrorDetail(
-        (detail) => detail ?? getUiString(interfaceLang, "micDenied")
-      );
+      setErrorDetail((detail) => detail ?? getUiString(interfaceLang, "micDenied"));
     }
   }, [
-    targetLang,
+    dispose,
+    startListening,
     exercise.expectedForeign,
     soundsEnabled,
     bonusAwarded,
@@ -105,12 +111,18 @@ export function Stage4Speaking({
     interfaceLang,
   ]);
 
+  const handleSkip = useCallback(() => {
+    dispose();
+    setListening(false);
+    onSkip();
+  }, [dispose, onSkip]);
+
   const promptBlock = (
     <>
       <p className="mb-2 text-xs uppercase tracking-wide text-violet-300">
         {getUiString(interfaceLang, "stage4Hint")}
       </p>
-      <p className="break-words text-lg font-semibold text-white sm:text-xl">
+      <p className="break-words text-base font-semibold text-white sm:text-lg md:text-xl">
         {prompt}
       </p>
       <p className="mt-3 break-words text-sm text-white/40">
@@ -132,7 +144,7 @@ export function Stage4Speaking({
       {embedded ? (
         <div className="text-center">{promptBlock}</div>
       ) : (
-        <GlassCard className="w-full border-white/10 bg-slate-950/50 p-4 text-center backdrop-blur-xl md:p-6">
+        <GlassCard className="w-full border-white/10 bg-slate-950/50 p-4 text-center backdrop-blur-xl sm:p-6">
           {promptBlock}
         </GlassCard>
       )}
@@ -143,7 +155,7 @@ export function Stage4Speaking({
           onClick={handleMic}
           disabled={listening || result === "success"}
           className={cn(
-            "flex h-28 w-28 items-center justify-center rounded-full border-2 transition-all",
+            "flex h-24 w-24 items-center justify-center rounded-full border-2 transition-all sm:h-28 sm:w-28",
             listening
               ? "border-red-400/60 bg-red-500/20 animate-pulse"
               : result === "success"
@@ -165,7 +177,7 @@ export function Stage4Speaking({
             : getUiString(interfaceLang, "tapMic")}
         </p>
         {transcript && (
-          <p className="text-xs text-white/40">
+          <p className="max-w-full break-words px-4 text-xs text-white/40">
             {getUiString(interfaceLang, "heard")}: &ldquo;{transcript}&rdquo;
           </p>
         )}
@@ -177,7 +189,7 @@ export function Stage4Speaking({
         {result === "denied" && errorDetail && (
           <div
             role="alert"
-            className="w-full rounded-2xl border border-red-500/40 bg-red-500/15 px-4 py-3 text-center text-sm text-red-100"
+            className="w-full max-w-md rounded-2xl border border-red-500/40 bg-red-500/15 px-4 py-3 text-center text-sm text-red-100"
           >
             <MicOff size={16} className="mx-auto mb-1 text-red-300" />
             {errorDetail}
@@ -185,12 +197,12 @@ export function Stage4Speaking({
         )}
       </div>
 
-      <div className="flex w-full min-w-0 gap-2">
-        <Button variant="secondary" className="min-w-0 flex-1" onClick={onSkip}>
+      <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row">
+        <Button variant="secondary" className="min-w-0 w-full flex-1" onClick={handleSkip}>
           {getUiString(interfaceLang, "skip")}
         </Button>
         {result === "fail" && (
-          <Button className="min-w-0 flex-1" onClick={handleMic}>
+          <Button className="min-w-0 w-full flex-1" onClick={handleMic}>
             {getUiString(interfaceLang, "retry")}
           </Button>
         )}

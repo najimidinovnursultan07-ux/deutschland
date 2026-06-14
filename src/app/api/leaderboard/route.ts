@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const entries = await listLeaderboardEntries(10);
+    const entries = await listLeaderboardEntries(200);
     return NextResponse.json(
       { entries },
       { headers: { "Cache-Control": "no-store" } }

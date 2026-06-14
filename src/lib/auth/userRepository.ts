@@ -1,10 +1,16 @@
 import { isRootAdmin, normalizeEmail, resolveUserRole, ROOT_ADMIN_EMAIL } from "@/lib/admin";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { readJsonArray, writeJsonArray } from "@/lib/storage/jsonStore";
-import { upsertDirectoryUser } from "@/lib/users/repository";
+import {
+  createRedisClient,
+  isRedisConfigured,
+  readJsonArray,
+  writeJsonArray,
+} from "@/lib/storage/jsonStore";
+import { getDirectoryUserByEmail, upsertDirectoryUser } from "@/lib/users/repository";
 import type { PublicUser, TargetLanguage, UserRole } from "@/types";
 
 const AUTH_USERS_KEY = "lingua:auth-users";
+const AUTH_USERS_HASH_KEY = "lingua:auth-users-by-email";
 
 export interface StoredAuthUser {
   id: string;
@@ -34,20 +40,113 @@ export function toPublicUser(user: StoredAuthUser): PublicUser {
   };
 }
 
-async function listAuthUsers(): Promise<StoredAuthUser[]> {
-  return readJsonArray<StoredAuthUser>(AUTH_USERS_KEY);
+async function migrateLegacyAuthArrayIfNeeded(): Promise<void> {
+  if (!isRedisConfigured()) return;
+
+  const redis = createRedisClient();
+  const hashCount = await redis.hlen(AUTH_USERS_HASH_KEY);
+  if (hashCount > 0) return;
+
+  const legacy = await redis.get<StoredAuthUser[]>(AUTH_USERS_KEY);
+  if (!Array.isArray(legacy) || legacy.length === 0) return;
+
+  const entries: Record<string, StoredAuthUser> = {};
+  for (const user of legacy) {
+    entries[normalizeEmail(user.email)] = {
+      ...user,
+      email: normalizeEmail(user.email),
+    };
+  }
+
+  await redis.hset(AUTH_USERS_HASH_KEY, entries);
 }
 
-async function saveAuthUsers(users: StoredAuthUser[]): Promise<void> {
+async function listAuthUsersFromFile(): Promise<StoredAuthUser[]> {
+  const users = await readJsonArray<StoredAuthUser>(AUTH_USERS_KEY);
+  return users.map((user) => ({
+    ...user,
+    email: normalizeEmail(user.email),
+  }));
+}
+
+async function saveAuthUsersToFile(users: StoredAuthUser[]): Promise<void> {
   await writeJsonArray(AUTH_USERS_KEY, users);
+}
+
+async function listAuthUsers(): Promise<StoredAuthUser[]> {
+  if (isRedisConfigured()) {
+    await migrateLegacyAuthArrayIfNeeded();
+    const redis = createRedisClient();
+    const all = await redis.hgetall<Record<string, StoredAuthUser>>(
+      AUTH_USERS_HASH_KEY
+    );
+    if (!all) return [];
+    return Object.values(all).map((user) => ({
+      ...user,
+      email: normalizeEmail(user.email),
+    }));
+  }
+
+  return listAuthUsersFromFile();
+}
+
+async function findAuthUserByEmailInStore(
+  email: string
+): Promise<StoredAuthUser | null> {
+  const normalized = normalizeEmail(email);
+
+  if (isRedisConfigured()) {
+    await migrateLegacyAuthArrayIfNeeded();
+    const redis = createRedisClient();
+    const user = await redis.hget<StoredAuthUser>(AUTH_USERS_HASH_KEY, normalized);
+    return user ? { ...user, email: normalized } : null;
+  }
+
+  const users = await listAuthUsersFromFile();
+  return users.find((u) => normalizeEmail(u.email) === normalized) ?? null;
+}
+
+async function upsertAuthUserInStore(user: StoredAuthUser): Promise<void> {
+  const normalized = normalizeEmail(user.email);
+  const record = { ...user, email: normalized };
+
+  if (isRedisConfigured()) {
+    const redis = createRedisClient();
+    await redis.hset(AUTH_USERS_HASH_KEY, { [normalized]: record });
+    return;
+  }
+
+  const users = await listAuthUsersFromFile();
+  const index = users.findIndex(
+    (u) => u.id === record.id || normalizeEmail(u.email) === normalized
+  );
+  const next =
+    index >= 0
+      ? users.map((u, i) => (i === index ? record : u))
+      : [record, ...users];
+  await saveAuthUsersToFile(next);
+}
+
+async function insertAuthUserIfAbsent(user: StoredAuthUser): Promise<boolean> {
+  const normalized = normalizeEmail(user.email);
+  const record = { ...user, email: normalized };
+
+  if (isRedisConfigured()) {
+    const redis = createRedisClient();
+    const added = await redis.hsetnx(AUTH_USERS_HASH_KEY, normalized, record);
+    return added === 1;
+  }
+
+  const existing = await findAuthUserByEmailInStore(normalized);
+  if (existing) return false;
+  await upsertAuthUserInStore(record);
+  return true;
 }
 
 export async function findAuthUserByEmail(
   email: string
 ): Promise<StoredAuthUser | null> {
-  const normalized = normalizeEmail(email);
-  const users = await listAuthUsers();
-  return users.find((u) => normalizeEmail(u.email) === normalized) ?? null;
+  return findAuthUserByEmailInStore(email);
 }
 
 export async function findAuthUserById(
@@ -57,8 +156,16 @@ export async function findAuthUserById(
   return users.find((u) => u.id === id) ?? null;
 }
 
+export async function emailAlreadyRegistered(email: string): Promise<boolean> {
+  const normalized = normalizeEmail(email);
+  const authUser = await findAuthUserByEmailInStore(normalized);
+  if (authUser) return true;
+  const directoryUser = await getDirectoryUserByEmail(normalized);
+  return Boolean(directoryUser);
+}
+
 export async function ensureRootAdminAccount(): Promise<void> {
-  const existing = await findAuthUserByEmail(ROOT_ADMIN_EMAIL);
+  const existing = await findAuthUserByEmailInStore(ROOT_ADMIN_EMAIL);
   if (existing) return;
 
   const password =
@@ -82,8 +189,8 @@ export async function createAuthUser(input: {
   targetLanguage: TargetLanguage;
 }): Promise<PublicUser> {
   const email = normalizeEmail(input.email);
-  const existing = await findAuthUserByEmail(email);
-  if (existing) {
+
+  if (await emailAlreadyRegistered(email)) {
     throw new Error("EMAIL_EXISTS");
   }
 
@@ -103,8 +210,11 @@ export async function createAuthUser(input: {
     updatedAt: now,
   };
 
-  const users = await listAuthUsers();
-  await saveAuthUsers([user, ...users]);
+  const inserted = await insertAuthUserIfAbsent(user);
+  if (!inserted) {
+    throw new Error("EMAIL_EXISTS");
+  }
+
   await upsertDirectoryUser({
     id: user.id,
     name: user.name,
@@ -121,7 +231,7 @@ export async function authenticateUser(
 ): Promise<PublicUser | null> {
   await ensureRootAdminAccount();
 
-  const user = await findAuthUserByEmail(email);
+  const user = await findAuthUserByEmailInStore(email);
   if (!user) return null;
 
   const valid = await verifyPassword(password.trim(), user.passwordHash);
@@ -134,10 +244,7 @@ export async function authenticateUser(
     updatedAt: new Date().toISOString(),
   };
 
-  const users = await listAuthUsers();
-  await saveAuthUsers(
-    users.map((u) => (u.id === user.id ? updated : u))
-  );
+  await upsertAuthUserInStore(updated);
 
   await upsertDirectoryUser({
     id: updated.id,
@@ -160,10 +267,8 @@ export async function updateAuthUserProfile(
   }
 ): Promise<PublicUser | null> {
   const users = await listAuthUsers();
-  const index = users.findIndex((u) => u.id === userId);
-  if (index < 0) return null;
-
-  const current = users[index];
+  const current = users.find((u) => u.id === userId);
+  if (!current) return null;
 
   if (input.password) {
     if (!input.currentPassword) {
@@ -188,9 +293,7 @@ export async function updateAuthUserProfile(
     updatedAt: new Date().toISOString(),
   };
 
-  const next = [...users];
-  next[index] = updated;
-  await saveAuthUsers(next);
+  await upsertAuthUserInStore(updated);
 
   await upsertDirectoryUser({
     id: updated.id,
@@ -223,7 +326,7 @@ export async function updateAuthUserRole(
     updatedAt: new Date().toISOString(),
   };
 
-  await saveAuthUsers(users.map((u) => (u.id === userId ? updated : u)));
+  await upsertAuthUserInStore(updated);
   await upsertDirectoryUser({
     id: updated.id,
     name: updated.name,

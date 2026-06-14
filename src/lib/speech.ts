@@ -35,7 +35,7 @@ export async function requestMicrophoneAccess(): Promise<MicAccessResult> {
     }
   }
 
-  if (getSpeechRecognition()) {
+  if (getSpeechRecognitionConstructor()) {
     return "granted";
   }
 
@@ -116,6 +116,7 @@ interface SpeechRecognitionInstance extends EventTarget {
   interimResults: boolean;
   start: () => void;
   stop: () => void;
+  abort: () => void;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
   onerror: ((event: Event) => void) | null;
   onend: (() => void) | null;
@@ -123,7 +124,7 @@ interface SpeechRecognitionInstance extends EventTarget {
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
-function getSpeechRecognition(): SpeechRecognitionConstructor | null {
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
   if (typeof window === "undefined") return null;
 
   const win = window as Window & {
@@ -135,37 +136,42 @@ function getSpeechRecognition(): SpeechRecognitionConstructor | null {
 }
 
 export function isVoiceSearchSupported(): boolean {
-  return getSpeechRecognition() !== null;
+  return getSpeechRecognitionConstructor() !== null;
 }
 
-export function startPronunciationPractice(
-  targetLang: TargetLanguage,
-  onResult: (transcript: string) => void,
-  onError?: (reason: MicAccessResult) => void
-): (() => void) | null {
-  return startVoiceSearch(LOCKED_LOCALES[targetLang], onResult, onError);
-}
+/** Hard-stop any active recognition instance — call before advancing steps */
+export function disposeSpeechRecognition(
+  recognition: SpeechRecognitionInstance | null
+): void {
+  if (!recognition) return;
 
-/** Async entry — requests mic permission before starting recognition */
-export async function startPronunciationPracticeSecure(
-  targetLang: TargetLanguage,
-  onResult: (transcript: string) => void,
-  onError?: (reason: MicAccessResult) => void
-): Promise<(() => void) | null> {
-  const access = await requestMicrophoneAccess();
-  if (access !== "granted") {
-    onError?.(access);
-    return null;
+  recognition.onresult = null;
+  recognition.onerror = null;
+  recognition.onend = null;
+
+  try {
+    recognition.abort();
+  } catch {
+    try {
+      recognition.stop();
+    } catch {
+      /* already stopped */
+    }
   }
-  return startVoiceSearch(LOCKED_LOCALES[targetLang], onResult, onError);
 }
 
-export function startVoiceSearch(
+export interface SpeechRecognitionHandle {
+  recognition: SpeechRecognitionInstance;
+  dispose: () => void;
+}
+
+/** Fresh instance per exercise — prevents listener stacking across steps */
+export function createSpeechRecognition(
   lang: string,
   onResult: (transcript: string) => void,
   onError?: (reason: MicAccessResult) => void
-): (() => void) | null {
-  const SpeechRecognition = getSpeechRecognition();
+): SpeechRecognitionHandle | null {
+  const SpeechRecognition = getSpeechRecognitionConstructor();
   if (!SpeechRecognition) {
     onError?.("unsupported");
     return null;
@@ -190,18 +196,48 @@ export function startVoiceSearch(
     }
   };
 
+  const dispose = () => disposeSpeechRecognition(recognition);
+
+  return { recognition, dispose };
+}
+
+export function startVoiceSearch(
+  lang: string,
+  onResult: (transcript: string) => void,
+  onError?: (reason: MicAccessResult) => void
+): (() => void) | null {
+  const session = createSpeechRecognition(lang, onResult, onError);
+  if (!session) return null;
+
   try {
-    recognition.start();
+    session.recognition.start();
   } catch {
+    session.dispose();
     onError?.("denied");
     return null;
   }
 
-  return () => {
-    try {
-      recognition.stop();
-    } catch {
-      /* already stopped */
-    }
-  };
+  return session.dispose;
+}
+
+export function startPronunciationPractice(
+  targetLang: TargetLanguage,
+  onResult: (transcript: string) => void,
+  onError?: (reason: MicAccessResult) => void
+): (() => void) | null {
+  return startVoiceSearch(LOCKED_LOCALES[targetLang], onResult, onError);
+}
+
+/** Async entry — requests mic permission before starting recognition */
+export async function startPronunciationPracticeSecure(
+  targetLang: TargetLanguage,
+  onResult: (transcript: string) => void,
+  onError?: (reason: MicAccessResult) => void
+): Promise<(() => void) | null> {
+  const access = await requestMicrophoneAccess();
+  if (access !== "granted") {
+    onError?.(access);
+    return null;
+  }
+  return startVoiceSearch(LOCKED_LOCALES[targetLang], onResult, onError);
 }

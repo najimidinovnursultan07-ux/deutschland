@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { attachSessionCookie } from "@/lib/auth/cookies";
-import { createAuthUser } from "@/lib/auth/userRepository";
+import {
+  createAuthUser,
+  emailAlreadyRegistered,
+} from "@/lib/auth/userRepository";
+import { notifyUserRegistered } from "@/lib/telegram/notifications";
+import { PersistentStorageError } from "@/lib/storage/jsonStore";
 import type { TargetLanguage } from "@/types";
 
 export const runtime = "nodejs";
@@ -29,6 +34,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (await emailAlreadyRegistered(body.email)) {
+      return NextResponse.json(
+        { error: "Email already in use" },
+        { status: 409 }
+      );
+    }
+
     const user = await createAuthUser({
       name: body.name,
       email: body.email,
@@ -36,10 +48,23 @@ export async function POST(request: Request) {
       targetLanguage: body.targetLanguage ?? "de",
     });
 
+    notifyUserRegistered({
+      name: user.name,
+      email: user.email,
+      targetLanguage: user.targetLanguage,
+    });
+
     return attachSessionCookie(user);
   } catch (error) {
     if (error instanceof Error && error.message === "EMAIL_EXISTS") {
       return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+    }
+    if (error instanceof PersistentStorageError) {
+      console.error("[POST /api/auth/register]", error.message);
+      return NextResponse.json(
+        { error: "Server storage is not configured" },
+        { status: 503 }
+      );
     }
     console.error("[POST /api/auth/register]", error);
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });

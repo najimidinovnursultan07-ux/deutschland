@@ -22,8 +22,8 @@ export function LeaderboardView() {
           </h1>
           <p className="mt-1 text-sm text-white/50">
             {interfaceLang === "ky"
-              ? "Активдүү оюнчулар · чыныгы XP"
-              : "Активные игроки · реальный XP"}
+              ? "Бардык катталган оюнчулар · жалпы XP боюнча"
+              : "Все зарегистрированные · по общему XP"}
           </p>
         </div>
         <button
@@ -49,8 +49,8 @@ export function LeaderboardView() {
         <GlassCard className="py-12 text-center">
           <p className="text-sm text-white/50">
             {interfaceLang === "ky"
-              ? "Азырынча активдүү оюнчулар жок. Сабак өтүп, XP топтогондо бул жерде көрүнөсүз!"
-              : "Пока нет активных игроков. Пройдите урок и заработайте XP, чтобы попасть в рейтинг!"}
+              ? "Азырынча катталган оюнчулар жок."
+              : "Пока нет зарегистрированных игроков."}
           </p>
         </GlassCard>
       ) : (
@@ -100,9 +100,11 @@ export function LeaderboardView() {
                     : `${entry.passedLessonCount} ур.`}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-violet-200">{entry.weeklyXp}</p>
-                <p className="text-xs text-white/40">XP</p>
+              <div className="shrink-0 text-right">
+                <p className="font-bold text-violet-200">{entry.totalXp}</p>
+                <p className="text-xs text-white/40">
+                  {interfaceLang === "ky" ? "жалпы XP" : "всего XP"}
+                </p>
               </div>
             </GlassCard>
           ))}

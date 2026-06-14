@@ -20,6 +20,7 @@ export function ProgressSync() {
       pair: s.languagePair,
       level: s.selectedLevel,
       session: s.activeLessonSession?.lessonId ?? null,
+      settings: s.settings,
     })
   );
 

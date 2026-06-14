@@ -6,6 +6,9 @@ import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
 import { PageContainer } from "./PageContainer";
 import { AchievementToast } from "@/components/gamification/AchievementToast";
+import { InstallPwaBanner } from "@/components/pwa/InstallPwaBanner";
+import { NotificationScheduler } from "@/components/notifications/NotificationScheduler";
+import { FeedbackPrompt } from "@/components/feedback/FeedbackPrompt";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { useAppStore } from "@/store/appStore";
 import { cn } from "@/lib/utils";
@@ -29,6 +32,8 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden">
+      <InstallPwaBanner />
+      <NotificationScheduler />
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{
@@ -63,6 +68,7 @@ export function AppShell({ children }: AppShellProps) {
         )}
       </main>
       {!isFullBleed && <BottomNav />}
+      {!isFullBleed && <FeedbackPrompt />}
       <AchievementToast interfaceLang={interfaceLang} />
     </div>
   );

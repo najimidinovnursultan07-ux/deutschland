@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 import { LanguagePairSwitcher } from "./LanguagePairSwitcher";
 import { Button } from "@/components/ui/Button";
 import { getUiString } from "@/lib/constants";
@@ -25,12 +26,10 @@ export function Header() {
   const interfaceLang = useInterfaceLang();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-900/60 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-900/60 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 px-4 py-3 sm:px-6 md:max-w-4xl md:px-8 lg:max-w-7xl">
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500">
-            <BookOpen className="h-5 w-5 text-white" />
-          </div>
+          <Logo size={40} className="h-9 w-auto" />
           <span className="hidden font-bold text-white sm:inline">
             LinguaBridge
           </span>

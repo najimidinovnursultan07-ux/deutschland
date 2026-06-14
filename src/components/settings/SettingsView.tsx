@@ -15,6 +15,7 @@ import { SuggestionForm } from "./SuggestionForm";
 import { RootAdminSettingsPanel } from "./RootAdminSettingsPanel";
 import { getUiString } from "@/lib/constants";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
+import { requestNotificationPermission } from "@/lib/notifications/reminderEngine";
 import {
   getTargetLangFromPair,
   useAppStore,
@@ -40,6 +41,17 @@ export function SettingsView() {
     setLanguagePair(`${base}-${target}` as LanguagePair);
   };
 
+  const handleNotificationToggle = async (
+    key: "dailyReminders" | "systemNotifications",
+    enabled: boolean
+  ) => {
+    if (enabled) {
+      const permission = await requestNotificationPermission();
+      if (permission !== "granted") return;
+    }
+    updateSettings({ [key]: enabled });
+  };
+
   return (
     <div className="w-full min-w-0 space-y-6">
       <h1 className="text-2xl font-bold text-white">
@@ -53,7 +65,7 @@ export function SettingsView() {
         </h2>
         <Toggle
           enabled={settings.dailyReminders}
-          onChange={(v) => updateSettings({ dailyReminders: v })}
+          onChange={(v) => void handleNotificationToggle("dailyReminders", v)}
           label={getUiString(interfaceLang, "dailyReminders")}
         />
         <Toggle
@@ -63,7 +75,7 @@ export function SettingsView() {
         />
         <Toggle
           enabled={settings.systemNotifications}
-          onChange={(v) => updateSettings({ systemNotifications: v })}
+          onChange={(v) => void handleNotificationToggle("systemNotifications", v)}
           label={getUiString(interfaceLang, "systemNotifications")}
         />
       </GlassCard>
