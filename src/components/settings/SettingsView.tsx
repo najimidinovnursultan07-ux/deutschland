@@ -149,7 +149,7 @@ export function SettingsView() {
           {getUiString(interfaceLang, "support")} /{" "}
           {getUiString(interfaceLang, "help")}
         </h2>
-        <SupportAccordion interfaceLang={interfaceLang} />
+        <SupportAccordion />
       </GlassCard>
 
       {showRootAdminPanel && <RootAdminSettingsPanel />}

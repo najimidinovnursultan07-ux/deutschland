@@ -4,8 +4,7 @@ import { useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { getUiString } from "@/lib/constants";
-import { useInterfaceLang } from "@/hooks/useInterfaceLang";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useAuthStore } from "@/store/authStore";
 
 const MIN_WORDS = 100;
@@ -17,7 +16,7 @@ function countWords(text: string): number {
 }
 
 export function SuggestionForm() {
-  const interfaceLang = useInterfaceLang();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
@@ -48,11 +47,7 @@ export function SuggestionForm() {
         } | null;
         const message =
           payload?.error ??
-          (res.status === 401
-            ? interfaceLang === "ky"
-              ? "Кайра кириңиз"
-              : "Войдите снова"
-            : `Submit failed (${res.status})`);
+          (res.status === 401 ? t("suggestion.relogin") : t("feedback.error"));
         throw new Error(message);
       }
 
@@ -60,7 +55,7 @@ export function SuggestionForm() {
       setSent(true);
       setTimeout(() => setSent(false), 4000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Submit failed");
+      setError(err instanceof Error ? err.message : t("feedback.error"));
     } finally {
       setSubmitting(false);
     }
@@ -71,20 +66,19 @@ export function SuggestionForm() {
       <GlassCard className="p-4 sm:p-6">
         <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-white sm:text-lg">
           <MessageSquarePlus size={18} />
-          {getUiString(interfaceLang, "submitSuggestion")}
+          {t("submitSuggestion")}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={5}
-            placeholder={getUiString(interfaceLang, "suggestionPlaceholder")}
+            placeholder={t("suggestionPlaceholder")}
             className="w-full resize-none rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-violet-400/50 focus:outline-none"
           />
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/40">
             <span>
-              {wordCount} / {MIN_WORDS}{" "}
-              {interfaceLang === "ky" ? "сөз" : "слов"}
+              {wordCount} / {MIN_WORDS} {t("suggestion.wordCount")}
             </span>
           </div>
           {!meetsMinimum && text.trim().length > 0 && (
@@ -92,12 +86,12 @@ export function SuggestionForm() {
               className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
               role="alert"
             >
-              Сунушуңузду кененирээк жазыңыз (минимум 100 сөз болушу шарт).
+              {t("suggestion.minWordsAlert")}
             </p>
           )}
           {sent && (
             <p className="text-sm text-emerald-300" role="status">
-              {getUiString(interfaceLang, "suggestionSent")}
+              {t("suggestionSent")}
             </p>
           )}
           {error && (
@@ -110,7 +104,7 @@ export function SuggestionForm() {
             className="w-full sm:w-auto"
             disabled={!text.trim() || !meetsMinimum || submitting}
           >
-            {getUiString(interfaceLang, "sendSuggestion")}
+            {t("sendSuggestion")}
           </Button>
         </form>
       </GlassCard>

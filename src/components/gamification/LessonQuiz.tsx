@@ -94,7 +94,6 @@ export function LessonQuiz({
   if (showHeartsModal) {
     return (
       <HeartsModal
-        interfaceLang={interfaceLang}
         onClose={() => {
           setShowHeartsModal(false);
           onCancel();

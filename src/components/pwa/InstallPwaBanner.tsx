@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { X, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -19,6 +20,7 @@ function isStandaloneDisplay(): boolean {
 }
 
 export function InstallPwaBanner() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
@@ -76,10 +78,10 @@ export function InstallPwaBanner() {
       className={cn(
         "sticky top-0 z-[60] flex w-full items-center justify-center gap-2 border-b border-violet-400/30",
         "bg-gradient-to-r from-violet-600/95 via-fuchsia-600/95 to-indigo-600/95 px-3 py-2.5 backdrop-blur-md",
-        "sm:gap-3 sm:px-4"
+        "sm:gap-3 sm:px-4",
       )}
       role="region"
-      aria-label="Install app"
+      aria-label={t("pwa.install")}
     >
       <button
         type="button"
@@ -88,13 +90,13 @@ export function InstallPwaBanner() {
         className="flex min-w-0 flex-1 items-center justify-center gap-2 text-center text-sm font-medium text-white sm:text-base"
       >
         <Download size={16} className="shrink-0" />
-        <span className="break-words">📲 Колдонмону орнотуу</span>
+        <span className="break-words">📲 {t("pwa.install")}</span>
       </button>
       <button
         type="button"
         onClick={handleDismiss}
         className="shrink-0 rounded-lg p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white"
-        aria-label="Close"
+        aria-label={t("feedback.close")}
       >
         <X size={18} />
       </button>

@@ -5,18 +5,15 @@ import Link from "next/link";
 import { RotateCcw } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { useAppStore } from "@/store/appStore";
-import type { InterfaceLanguage } from "@/types";
+import { useTranslation } from "@/hooks/useTranslation";
 
-interface SRSReviewBannerProps {
-  interfaceLang: InterfaceLanguage;
-}
-
-export function SRSReviewBanner({ interfaceLang }: SRSReviewBannerProps) {
+export function SRSReviewBanner() {
+  const { t } = useTranslation();
   const getDueReviewCount = useAppStore((s) => s.getDueReviewCount);
   const dueCount = useAppStore((s) => {
     const today = new Date().toISOString().split("T")[0];
     return Object.values(s.srsRecords).filter(
-      (r) => r.nextReviewDate <= today
+      (r) => r.nextReviewDate <= today,
     ).length;
   });
 
@@ -33,13 +30,9 @@ export function SRSReviewBanner({ interfaceLang }: SRSReviewBannerProps) {
           <RotateCcw className="text-cyan-300" size={22} />
         </div>
         <div>
-          <p className="font-semibold text-white">
-            {interfaceLang === "ky" ? "Кайталоо" : "Повторение"}
-          </p>
+          <p className="font-semibold text-white">{t("gamification.review")}</p>
           <p className="text-sm text-white/60">
-            {interfaceLang === "ky"
-              ? `Бүгүн ${dueCount} сөз кайталоого даяр`
-              : `Сегодня ${dueCount} слов к повторению`}
+            {t("gamification.srsDue", { count: dueCount })}
           </p>
         </div>
         <span className="ml-auto rounded-full bg-cyan-500/30 px-3 py-1 text-sm font-bold text-cyan-200">

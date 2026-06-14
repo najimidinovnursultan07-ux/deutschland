@@ -118,7 +118,6 @@ export function Stage5FinalQuiz({
   if (showHeartsModal) {
     return (
       <HeartsModal
-        interfaceLang={interfaceLang}
         onClose={() => router.push("/")}
       />
     );

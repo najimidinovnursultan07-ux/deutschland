@@ -20,31 +20,41 @@ export async function POST(request: Request) {
       targetLanguage?: TargetLanguage;
     };
 
-    if (!body.email?.trim() || !body.password || !body.name?.trim()) {
+    const name = body.name?.trim() ?? "";
+    const email = body.email?.trim().toLowerCase() ?? "";
+    const password = body.password?.trim() ?? "";
+
+    if (!email || !password || !name) {
       return NextResponse.json(
-        { error: "Name, email and password are required" },
-        { status: 400 }
+        {
+          code: "VALIDATION_ERROR",
+          error: "Name, email and password are required",
+        },
+        { status: 400 },
       );
     }
 
-    if (body.password.length < 6) {
+    if (password.length < 6) {
       return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
+        {
+          code: "PASSWORD_TOO_SHORT",
+          error: "Password must be at least 6 characters",
+        },
+        { status: 400 },
       );
     }
 
-    if (await emailAlreadyRegistered(body.email)) {
+    if (await emailAlreadyRegistered(email)) {
       return NextResponse.json(
-        { error: "Email already in use" },
-        { status: 409 }
+        { code: "EMAIL_EXISTS", error: "Email already in use" },
+        { status: 409 },
       );
     }
 
     const user = await createAuthUser({
-      name: body.name,
-      email: body.email,
-      password: body.password,
+      name,
+      email,
+      password,
       targetLanguage: body.targetLanguage ?? "de",
     });
 
@@ -57,16 +67,25 @@ export async function POST(request: Request) {
     return attachSessionCookie(user);
   } catch (error) {
     if (error instanceof Error && error.message === "EMAIL_EXISTS") {
-      return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+      return NextResponse.json(
+        { code: "EMAIL_EXISTS", error: "Email already in use" },
+        { status: 409 },
+      );
     }
     if (error instanceof PersistentStorageError) {
       console.error("[POST /api/auth/register]", error.message);
       return NextResponse.json(
-        { error: "Server storage is not configured" },
-        { status: 503 }
+        {
+          code: "STORAGE_ERROR",
+          error: "Server storage is not configured",
+        },
+        { status: 503 },
       );
     }
     console.error("[POST /api/auth/register]", error);
-    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+    return NextResponse.json(
+      { code: "SERVER_ERROR", error: "Registration failed" },
+      { status: 500 },
+    );
   }
 }

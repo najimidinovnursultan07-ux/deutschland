@@ -2,12 +2,11 @@
 
 import { Flame, BookMarked, Clock } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { getUiString } from "@/lib/constants";
-import { useInterfaceLang } from "@/hooks/useInterfaceLang";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useAppStore } from "@/store/appStore";
 
 export function StatsCards() {
-  const interfaceLang = useInterfaceLang();
+  const { t } = useTranslation();
   const streak = useAppStore((s) => s.streak);
   const totalWordsLearned = useAppStore((s) => s.totalWordsLearned);
   const recentLessonIds = useAppStore((s) => s.recentLessonIds);
@@ -15,21 +14,21 @@ export function StatsCards() {
   const stats = [
     {
       icon: Flame,
-      label: getUiString(interfaceLang, "dailyStreak"),
+      label: t("dailyStreak"),
       value: streak,
-      suffix: interfaceLang === "ky" ? "күн" : "дн.",
+      suffix: t("stats.daySuffix"),
       color: "from-orange-400 to-red-500",
     },
     {
       icon: BookMarked,
-      label: getUiString(interfaceLang, "wordsLearned"),
+      label: t("wordsLearned"),
       value: totalWordsLearned,
       suffix: "",
       color: "from-violet-400 to-purple-500",
     },
     {
       icon: Clock,
-      label: getUiString(interfaceLang, "recentLessons"),
+      label: t("recentLessons"),
       value: recentLessonIds.length,
       suffix: "",
       color: "from-sky-400 to-blue-500",

@@ -10,10 +10,12 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { getUiString } from "@/lib/constants";
 import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import type { TargetLanguage } from "@/types";
 
 export function ProfileView() {
+  const { t } = useTranslation();
   const interfaceLang = useInterfaceLang();
   const user = useAuthStore((s) => s.user);
   const updateProfile = useAuthStore((s) => s.updateProfile);
@@ -35,11 +37,7 @@ export function ProfileView() {
 
   const handleSave = async () => {
     if (password && !currentPassword) {
-      setSaveError(
-        interfaceLang === "ky"
-          ? "Азыркы сырсөздү киргизиңиз"
-          : "Введите текущий пароль"
-      );
+      setSaveError(t("profile.currentPasswordRequired"));
       return;
     }
 
@@ -54,11 +52,7 @@ export function ProfileView() {
     setSaving(false);
 
     if (!ok) {
-      setSaveError(
-        interfaceLang === "ky"
-          ? "Сактоо ийгиликсиз / Туура эмес сырсөз"
-          : "Не удалось сохранить / Неверный пароль"
-      );
+      setSaveError(`${t("profile.saveFailed")} / ${t("profile.wrongPassword")}`);
       return;
     }
 
@@ -122,8 +116,7 @@ export function ProfileView() {
               </p>
               <p className="flex items-center justify-center gap-2">
                 <Zap size={14} className="text-amber-400" />
-                {xp} XP · {streak}{" "}
-                {interfaceLang === "ky" ? "күн серия" : "дн. серия"}
+                {xp} XP · {streak} {t("profile.dayStreakSuffix")}
               </p>
               <p className="text-xs text-white/40">{languagePair}</p>
             </div>
@@ -131,12 +124,12 @@ export function ProfileView() {
         ) : (
           <div className="mt-6 space-y-4 text-left">
             <Input
-              label={getUiString(interfaceLang, "name")}
+              label={t("name")}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
             <Input
-              label="Avatar URL"
+              label={t("profile.avatarUrl")}
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
               placeholder="https://..."
@@ -144,11 +137,7 @@ export function ProfileView() {
             />
             {password ? (
               <PasswordInput
-                label={
-                  interfaceLang === "ky"
-                    ? "Азыркы сырсөз"
-                    : "Текущий пароль"
-                }
+                label={t("profile.currentPassword")}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 autoComplete="current-password"
@@ -156,14 +145,10 @@ export function ProfileView() {
               />
             ) : null}
             <PasswordInput
-              label={getUiString(interfaceLang, "password")}
+              label={t("password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={
-                interfaceLang === "ky"
-                  ? "Жаңы сырсөз (бош калтырсаңыз болот)"
-                  : "Новый пароль (оставьте пустым)"
-              }
+              placeholder={t("profile.newPasswordPlaceholder")}
               autoComplete="new-password"
               disabled={saving}
             />
@@ -195,21 +180,21 @@ export function ProfileView() {
             )}
             <div className="flex gap-3 pt-2">
               <Button className="flex-1" onClick={handleSave} disabled={saving}>
-                {saving ? "..." : getUiString(interfaceLang, "save")}
+                {saving ? t("loading") : t("save")}
               </Button>
               <Button
                 variant="ghost"
                 className="flex-1"
                 onClick={handleCancel}
               >
-                {getUiString(interfaceLang, "cancel")}
+                {t("cancel")}
               </Button>
             </div>
           </div>
         )}
       </GlassCard>
 
-      <AchievementGallery interfaceLang={interfaceLang} />
+      <AchievementGallery />
     </div>
   );
 }

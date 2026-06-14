@@ -5,14 +5,14 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { HEART_REFILL_XP_COST, HEART_REGEN_MINUTES } from "@/lib/gamification";
 import { useAppStore } from "@/store/appStore";
-import type { InterfaceLanguage } from "@/types";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface HeartsModalProps {
-  interfaceLang: InterfaceLanguage;
   onClose: () => void;
 }
 
-export function HeartsModal({ interfaceLang, onClose }: HeartsModalProps) {
+export function HeartsModal({ onClose }: HeartsModalProps) {
+  const { t } = useTranslation();
   const xp = useAppStore((s) => s.xp);
   const refillHeartsWithXp = useAppStore((s) => s.refillHeartsWithXp);
 
@@ -28,12 +28,10 @@ export function HeartsModal({ interfaceLang, onClose }: HeartsModalProps) {
             <Heart className="h-8 w-8 fill-red-500 text-red-500" />
           </div>
           <h2 className="text-xl font-bold text-white">
-            Жүрөкчөлөр түгөндү!
+            {t("gamification.heartsEmpty")}
           </h2>
           <p className="mt-1 text-sm text-white/50">
-            {interfaceLang === "ky"
-              ? "Кайра толтуруу же күтүү"
-              : "Пополните или подождите"}
+            {t("gamification.heartsSubtitle")}
           </p>
         </div>
 
@@ -44,23 +42,19 @@ export function HeartsModal({ interfaceLang, onClose }: HeartsModalProps) {
             disabled={xp < HEART_REFILL_XP_COST}
           >
             <Sparkles size={16} />
-            {interfaceLang === "ky"
-              ? `${HEART_REFILL_XP_COST} XP менен толтуруу`
-              : `Пополнить за ${HEART_REFILL_XP_COST} XP`}
+            {t("gamification.heartsRefill", { cost: HEART_REFILL_XP_COST })}
             <span className="text-white/60">({xp} XP)</span>
           </Button>
 
           <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
             <Clock className="shrink-0 text-violet-300" size={20} />
             <p className="text-sm text-white/70">
-              {interfaceLang === "ky"
-                ? `Ар бир жүрөк ${HEART_REGEN_MINUTES} мүнөттө калыбына келет`
-                : `Каждое сердце восстанавливается за ${HEART_REGEN_MINUTES} мин`}
+              {t("gamification.heartsRegen", { minutes: HEART_REGEN_MINUTES })}
             </p>
           </div>
 
           <Button variant="ghost" className="w-full" onClick={onClose}>
-            {interfaceLang === "ky" ? "Жабуу" : "Закрыть"}
+            {t("feedback.close")}
           </Button>
         </div>
       </GlassCard>

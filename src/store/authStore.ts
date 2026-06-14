@@ -1,6 +1,15 @@
 "use client";
 
 import { create } from "zustand";
+import {
+  mapLoginResponseToResult,
+  type AuthActionResult,
+} from "@/lib/auth/authResult";
+import {
+  isValidEmail,
+  normalizeAuthEmail,
+  normalizeAuthPassword,
+} from "@/lib/auth/validation";
 import type { ProfileUpdateData, SignUpData, User } from "@/types";
 
 interface AuthState {
@@ -8,10 +17,18 @@ interface AuthState {
   isAuthenticated: boolean;
   hydrated: boolean;
   fetchSession: () => Promise<User | null>;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (data: SignUpData) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<AuthActionResult>;
+  signup: (data: SignUpData) => Promise<AuthActionResult>;
   logout: () => Promise<void>;
   updateProfile: (data: ProfileUpdateData) => Promise<boolean>;
+}
+
+async function parseJsonResponse<T>(res: Response): Promise<T | null> {
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -36,7 +53,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         return null;
       }
 
-      const data = (await res.json()) as { user: User };
+      const data = await parseJsonResponse<{ user: User }>(res);
+      if (!data?.user) {
+        set({ user: null, isAuthenticated: false, hydrated: true });
+        return null;
+      }
+
       set({ user: data.user, isAuthenticated: true, hydrated: true });
       return data.user;
     } catch {
@@ -46,40 +68,103 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: async (email, password) => {
+    const trimmedEmail = normalizeAuthEmail(email);
+    const trimmedPassword = normalizeAuthPassword(password);
+
+    if (!trimmedEmail) {
+      return { success: false, errorCode: "INVALID_EMAIL" };
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      return { success: false, errorCode: "INVALID_EMAIL" };
+    }
+
+    if (!trimmedPassword) {
+      return { success: false, errorCode: "PASSWORD_REQUIRED" };
+    }
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
       });
 
-      if (!res.ok) return false;
+      if (!res.ok) {
+        const payload = await parseJsonResponse<{
+          code?: string;
+          error?: string;
+        }>(res);
+        return mapLoginResponseToResult(res.status, payload);
+      }
 
-      const data = (await res.json()) as { user: User };
+      const data = await parseJsonResponse<{ user: User }>(res);
+      if (!data?.user) {
+        return { success: false, errorCode: "SERVER_ERROR" };
+      }
+
       set({ user: data.user, isAuthenticated: true, hydrated: true });
-      return true;
+      return { success: true };
     } catch {
-      return false;
+      return { success: false, errorCode: "NETWORK_ERROR" };
     }
   },
 
   signup: async (data) => {
+    const name = data.name.trim();
+    const email = normalizeAuthEmail(data.email);
+    const password = normalizeAuthPassword(data.password);
+
+    if (!name) {
+      return { success: false, errorCode: "NAME_REQUIRED" };
+    }
+
+    if (!email || !isValidEmail(email)) {
+      return { success: false, errorCode: "INVALID_EMAIL" };
+    }
+
+    if (!password) {
+      return { success: false, errorCode: "PASSWORD_REQUIRED" };
+    }
+
+    if (password.length < 6) {
+      return { success: false, errorCode: "PASSWORD_TOO_SHORT" };
+    }
+
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          targetLanguage: data.targetLanguage,
+        }),
       });
 
-      if (!res.ok) return false;
+      if (!res.ok) {
+        const payload = await parseJsonResponse<{
+          code?: string;
+          error?: string;
+        }>(res);
+        return mapLoginResponseToResult(res.status, payload);
+      }
 
-      const payload = (await res.json()) as { user: User };
+      const payload = await parseJsonResponse<{ user: User }>(res);
+      if (!payload?.user) {
+        return { success: false, errorCode: "SERVER_ERROR" };
+      }
+
       set({ user: payload.user, isAuthenticated: true, hydrated: true });
-      return true;
+      return { success: true };
     } catch {
-      return false;
+      return { success: false, errorCode: "NETWORK_ERROR" };
     }
   },
 
@@ -112,7 +197,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (!res.ok) return false;
 
-      const payload = (await res.json()) as { user: User };
+      const payload = await parseJsonResponse<{ user: User }>(res);
+      if (!payload?.user) return false;
+
       set({ user: payload.user, isAuthenticated: true });
       return true;
     } catch {

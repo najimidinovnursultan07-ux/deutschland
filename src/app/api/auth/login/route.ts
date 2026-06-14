@@ -17,34 +17,61 @@ export async function POST(request: Request) {
       password?: string;
     };
 
-    if (!body.email?.trim() || !body.password) {
+    const email = body.email?.trim() ?? "";
+    const password = body.password?.trim() ?? "";
+
+    if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
+        { code: "VALIDATION_ERROR", error: "Email and password are required" },
+        { status: 400 },
       );
     }
 
-    const user = await authenticateUser(body.email, body.password);
-    if (!user) {
-      notifyFailedLogin(body.email.trim());
+    const result = await authenticateUser(email, password);
+
+    if (!result.ok) {
+      notifyFailedLogin(email);
+
+      if (result.reason === "USER_NOT_FOUND") {
+        return NextResponse.json(
+          {
+            code: "EMAIL_NOT_FOUND",
+            error: "No account found for this email",
+          },
+          { status: 401 },
+        );
+      }
+
       return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
+        {
+          code: "WRONG_PASSWORD",
+          error: "Incorrect password",
+        },
+        { status: 401 },
       );
     }
 
-    notifyUserLogin({ name: user.name, email: user.email });
+    notifyUserLogin({
+      name: result.user.name,
+      email: result.user.email,
+    });
 
-    return attachSessionCookie(user);
+    return attachSessionCookie(result.user);
   } catch (error) {
     if (error instanceof PersistentStorageError) {
       console.error("[POST /api/auth/login]", error.message);
       return NextResponse.json(
-        { error: "Server storage is not configured" },
-        { status: 503 }
+        {
+          code: "STORAGE_ERROR",
+          error: "Server storage is not configured",
+        },
+        { status: 503 },
       );
     }
     console.error("[POST /api/auth/login]", error);
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    return NextResponse.json(
+      { code: "SERVER_ERROR", error: "Login failed" },
+      { status: 500 },
+    );
   }
 }

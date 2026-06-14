@@ -2,13 +2,12 @@
 
 import { DAILY_GOAL_CONFIG } from "@/lib/gamification";
 import { useAppStore } from "@/store/appStore";
-import type { InterfaceLanguage } from "@/types";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 
-interface DailyGoalRingProps {
-  interfaceLang: InterfaceLanguage;
-}
-
-export function DailyGoalRing({ interfaceLang }: DailyGoalRingProps) {
+export function DailyGoalRing() {
+  const { t } = useTranslation();
+  const interfaceLang = useInterfaceLang();
   const dailyXp = useAppStore((s) => s.dailyXp);
   const dailyGoalTier = useAppStore((s) => s.dailyGoalTier);
   const setDailyGoalTier = useAppStore((s) => s.setDailyGoalTier);
@@ -57,7 +56,7 @@ export function DailyGoalRing({ interfaceLang }: DailyGoalRingProps) {
 
       <div className="flex-1 space-y-2">
         <p className="text-sm font-medium text-white/80">
-          {interfaceLang === "ky" ? "Күнүмдүк максат" : "Дневная цель"}
+          {t("gamification.dailyGoal")}
         </p>
         <div className="flex flex-wrap gap-2">
           {(["casual", "serious", "insane"] as const).map((tier) => (
@@ -78,9 +77,10 @@ export function DailyGoalRing({ interfaceLang }: DailyGoalRingProps) {
           ))}
         </div>
         <p className="text-xs text-white/40">
-          {interfaceLang === "ky"
-            ? `${config.minutes} мүнөт · ${target} XP максат`
-            : `${config.minutes} мин · цель ${target} XP`}
+          {t("gamification.dailyGoalMeta", {
+            minutes: config.minutes,
+            target,
+          })}
         </p>
       </div>
     </div>

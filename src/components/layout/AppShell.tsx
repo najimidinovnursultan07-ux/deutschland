@@ -9,7 +9,6 @@ import { AchievementToast } from "@/components/gamification/AchievementToast";
 import { InstallPwaBanner } from "@/components/pwa/InstallPwaBanner";
 import { NotificationScheduler } from "@/components/notifications/NotificationScheduler";
 import { FeedbackPrompt } from "@/components/feedback/FeedbackPrompt";
-import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { useAppStore } from "@/store/appStore";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +19,6 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const theme = useAppStore((s) => s.settings.theme);
-  const interfaceLang = useInterfaceLang();
   const isLessonRoute = pathname.startsWith("/lessons/");
   const isAdminRoute = pathname.startsWith("/admin");
   const isFullBleed = isLessonRoute || isAdminRoute;
@@ -69,7 +67,7 @@ export function AppShell({ children }: AppShellProps) {
       </main>
       {!isFullBleed && <BottomNav />}
       {!isFullBleed && <FeedbackPrompt />}
-      <AchievementToast interfaceLang={interfaceLang} />
+      <AchievementToast />
     </div>
   );
 }

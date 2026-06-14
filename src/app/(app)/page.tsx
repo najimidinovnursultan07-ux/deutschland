@@ -65,10 +65,10 @@ function HomeContent() {
       </div>
 
       <GlassCard className="border-white/10 bg-slate-950/50 backdrop-blur-xl">
-        <DailyGoalRing interfaceLang={interfaceLang} />
+        <DailyGoalRing />
       </GlassCard>
 
-      <SRSReviewBanner interfaceLang={interfaceLang} />
+      <SRSReviewBanner />
 
       <StatsCards />
 

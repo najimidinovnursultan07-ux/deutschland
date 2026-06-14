@@ -178,7 +178,6 @@ export function VisualLessonQuiz({ lesson, targetLang }: VisualLessonQuizProps) 
   if (showHeartsModal) {
     return (
       <HeartsModal
-        interfaceLang={interfaceLang}
         onClose={() => router.push(`/lessons/${encodeURIComponent(lesson.id)}`)}
       />
     );

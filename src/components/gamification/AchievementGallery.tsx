@@ -3,20 +3,19 @@
 import { ACHIEVEMENTS } from "@/lib/gamification";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { useAppStore } from "@/store/appStore";
-import type { InterfaceLanguage } from "@/types";
+import { useInterfaceLang } from "@/hooks/useInterfaceLang";
+import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 
-interface AchievementGalleryProps {
-  interfaceLang: InterfaceLanguage;
-}
-
-export function AchievementGallery({ interfaceLang }: AchievementGalleryProps) {
+export function AchievementGallery() {
+  const { t } = useTranslation();
+  const interfaceLang = useInterfaceLang();
   const unlocked = useAppStore((s) => s.unlockedAchievements);
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-white">
-        {interfaceLang === "ky" ? "Жетишкендиктер" : "Достижения"}
+        {t("gamification.achievements")}
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {ACHIEVEMENTS.map((ach) => {
@@ -28,7 +27,7 @@ export function AchievementGallery({ interfaceLang }: AchievementGalleryProps) {
                 "relative overflow-hidden p-4 text-center transition-all",
                 isUnlocked
                   ? "border-amber-400/30 bg-gradient-to-br from-amber-500/10 to-violet-500/10"
-                  : "opacity-50 grayscale"
+                  : "opacity-50 grayscale",
               )}
             >
               <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-3xl">

@@ -90,6 +90,32 @@ async function listAuthUsers(): Promise<StoredAuthUser[]> {
   return listAuthUsersFromFile();
 }
 
+async function findAuthUserInLegacyArray(
+  normalized: string
+): Promise<StoredAuthUser | null> {
+  if (isRedisConfigured()) {
+    const redis = createRedisClient();
+    const legacy = await redis.get<StoredAuthUser[]>(AUTH_USERS_KEY);
+    if (!Array.isArray(legacy)) return null;
+    const found =
+      legacy.find((u) => normalizeEmail(u.email) === normalized) ?? null;
+    return found ? { ...found, email: normalized } : null;
+  }
+
+  const users = await listAuthUsersFromFile();
+  return users.find((u) => normalizeEmail(u.email) === normalized) ?? null;
+}
+
+async function promoteLegacyUserToHash(user: StoredAuthUser): Promise<void> {
+  const normalized = normalizeEmail(user.email);
+  const record = { ...user, email: normalized };
+
+  if (isRedisConfigured()) {
+    const redis = createRedisClient();
+    await redis.hset(AUTH_USERS_HASH_KEY, { [normalized]: record });
+  }
+}
+
 async function findAuthUserByEmailInStore(
   email: string
 ): Promise<StoredAuthUser | null> {
@@ -99,11 +125,20 @@ async function findAuthUserByEmailInStore(
     await migrateLegacyAuthArrayIfNeeded();
     const redis = createRedisClient();
     const user = await redis.hget<StoredAuthUser>(AUTH_USERS_HASH_KEY, normalized);
-    return user ? { ...user, email: normalized } : null;
+    if (user) {
+      return { ...user, email: normalized };
+    }
+
+    const legacyUser = await findAuthUserInLegacyArray(normalized);
+    if (legacyUser) {
+      await promoteLegacyUserToHash(legacyUser);
+      return legacyUser;
+    }
+
+    return null;
   }
 
-  const users = await listAuthUsersFromFile();
-  return users.find((u) => normalizeEmail(u.email) === normalized) ?? null;
+  return findAuthUserInLegacyArray(normalized);
 }
 
 async function upsertAuthUserInStore(user: StoredAuthUser): Promise<void> {
@@ -225,17 +260,32 @@ export async function createAuthUser(input: {
   return toPublicUser(user);
 }
 
+export type AuthenticateUserResult =
+  | { ok: true; user: PublicUser }
+  | { ok: false; reason: "USER_NOT_FOUND" | "WRONG_PASSWORD" };
+
 export async function authenticateUser(
   email: string,
   password: string
-): Promise<PublicUser | null> {
+): Promise<AuthenticateUserResult> {
   await ensureRootAdminAccount();
 
-  const user = await findAuthUserByEmailInStore(email);
-  if (!user) return null;
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPassword = password.trim();
 
-  const valid = await verifyPassword(password.trim(), user.passwordHash);
-  if (!valid) return null;
+  if (!normalizedEmail || !normalizedPassword) {
+    return { ok: false, reason: "USER_NOT_FOUND" };
+  }
+
+  const user = await findAuthUserByEmailInStore(normalizedEmail);
+  if (!user) {
+    return { ok: false, reason: "USER_NOT_FOUND" };
+  }
+
+  const valid = await verifyPassword(normalizedPassword, user.passwordHash);
+  if (!valid) {
+    return { ok: false, reason: "WRONG_PASSWORD" };
+  }
 
   const role = resolveUserRole(user.email, user.role);
   const updated: StoredAuthUser = {
@@ -253,7 +303,7 @@ export async function authenticateUser(
     role: updated.role,
   });
 
-  return toPublicUser(updated);
+  return { ok: true, user: toPublicUser(updated) };
 }
 
 export async function updateAuthUserProfile(
@@ -287,7 +337,7 @@ export async function updateAuthUserProfile(
     avatarUrl: input.avatarUrl ?? current.avatarUrl,
     targetLanguage: input.targetLanguage ?? current.targetLanguage,
     passwordHash: input.password
-      ? await hashPassword(input.password)
+      ? await hashPassword(input.password.trim())
       : current.passwordHash,
     role: resolveUserRole(current.email, current.role),
     updatedAt: new Date().toISOString(),

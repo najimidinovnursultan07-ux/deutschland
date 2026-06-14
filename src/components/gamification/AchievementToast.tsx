@@ -4,14 +4,13 @@ import { useEffect } from "react";
 import { Trophy } from "lucide-react";
 import { ACHIEVEMENTS } from "@/lib/gamification";
 import { useAppStore } from "@/store/appStore";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { ConfettiOverlay } from "./ConfettiOverlay";
-import type { InterfaceLanguage } from "@/types";
 
-interface AchievementToastProps {
-  interfaceLang: InterfaceLanguage;
-}
-
-export function AchievementToast({ interfaceLang }: AchievementToastProps) {
+export function AchievementToast() {
+  const { t } = useTranslation();
+  const interfaceLang = useInterfaceLang();
   const pendingAchievement = useAppStore((s) => s.pendingAchievement);
   const clearPendingAchievement = useAppStore((s) => s.clearPendingAchievement);
   const settings = useAppStore((s) => s.settings);
@@ -37,7 +36,7 @@ export function AchievementToast({ interfaceLang }: AchievementToastProps) {
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1 text-xs font-medium text-amber-300">
               <Trophy size={12} />
-              {interfaceLang === "ky" ? "Жетишкендик!" : "Достижение!"}
+              {t("gamification.achievement")}
             </p>
             <p className="truncate font-bold text-white">
               {interfaceLang === "ky"
@@ -52,7 +51,7 @@ export function AchievementToast({ interfaceLang }: AchievementToastProps) {
             type="button"
             onClick={clearPendingAchievement}
             className="text-white/40 hover:text-white"
-            aria-label="Dismiss"
+            aria-label={t("gamification.dismiss")}
           >
             ×
           </button>

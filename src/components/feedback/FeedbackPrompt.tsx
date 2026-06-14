@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuthStore } from "@/store/authStore";
-import { useInterfaceLang } from "@/hooks/useInterfaceLang";
+import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 
 const FEEDBACK_SEEN_KEY = "lingua:feedback-prompt-seen";
-const FEEDBACK_DELAY_MS = 12 * 60 * 1000; // 12 minutes
+const FEEDBACK_DELAY_MS = 12 * 60 * 1000;
 
 interface FeedbackModalProps {
   open: boolean;
@@ -16,7 +16,7 @@ interface FeedbackModalProps {
 }
 
 function FeedbackModal({ open, onClose }: FeedbackModalProps) {
-  const interfaceLang = useInterfaceLang();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -42,7 +42,7 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
         const payload = (await res.json().catch(() => null)) as {
           error?: string;
         } | null;
-        throw new Error(payload?.error ?? "Submit failed");
+        throw new Error(payload?.error ?? t("feedback.error"));
       }
 
       setText("");
@@ -52,7 +52,7 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
         onClose();
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Submit failed");
+      setError(err instanceof Error ? err.message : t("feedback.error"));
     } finally {
       setSubmitting(false);
     }
@@ -71,7 +71,7 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
         type="button"
         className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("feedback.close")}
       />
       <div className="relative w-full max-w-md rounded-2xl border border-white/15 bg-slate-900/95 p-4 shadow-2xl sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -80,12 +80,13 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
             className="flex items-center gap-2 text-lg font-semibold text-white"
           >
             <MessageSquare size={20} className="text-violet-300" />
-            Отзыв калтыруу
+            {t("feedback.title")}
           </h2>
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg p-1 text-white/50 hover:bg-white/10 hover:text-white"
+            aria-label={t("feedback.close")}
           >
             <X size={18} />
           </button>
@@ -96,17 +97,13 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={5}
-            placeholder={
-              interfaceLang === "ky"
-                ? "Колдонмо жөнүндө ой-пикириңизди жазыңыз..."
-                : "Напишите ваш отзыв о приложении..."
-            }
+            placeholder={t("feedback.placeholder")}
             className="w-full resize-none rounded-xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-violet-400/50 focus:outline-none"
             required
           />
           {sent && (
             <p className="text-sm text-emerald-300" role="status">
-              {interfaceLang === "ky" ? "Рахмат! Жөнөтүлдү." : "Спасибо! Отправлено."}
+              {t("feedback.thanks")}
             </p>
           )}
           {error && (
@@ -121,14 +118,14 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
               className="w-full flex-1"
               onClick={onClose}
             >
-              {interfaceLang === "ky" ? "Жабуу" : "Закрыть"}
+              {t("feedback.close")}
             </Button>
             <Button
               type="submit"
               className="w-full flex-1"
               disabled={!text.trim() || submitting || !user}
             >
-              {submitting ? "..." : interfaceLang === "ky" ? "Жөнөтүү" : "Отправить"}
+              {submitting ? t("loading") : t("feedback.send")}
             </Button>
           </div>
         </form>
@@ -138,6 +135,7 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
 }
 
 export function FeedbackPrompt() {
+  const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [open, setOpen] = useState(false);
 
@@ -161,11 +159,11 @@ export function FeedbackPrompt() {
         className={cn(
           "fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40",
           "flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-600/90 px-4 py-2.5",
-          "text-xs font-medium text-white shadow-lg backdrop-blur-md sm:text-sm md:bottom-8"
+          "text-xs font-medium text-white shadow-lg backdrop-blur-md sm:text-sm md:bottom-8",
         )}
       >
         <MessageSquare size={16} />
-        Отзыв
+        {t("feedback.buttonShort")}
       </button>
       <FeedbackModal open={open} onClose={() => setOpen(false)} />
     </>
