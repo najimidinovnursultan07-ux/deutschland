@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
+import { InstallPwaButton } from "@/components/pwa/InstallPwaButton";
 import { LanguagePairSwitcher } from "./LanguagePairSwitcher";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -51,7 +52,8 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <InstallPwaButton size="sm" />
           <div className="hidden w-48 lg:block">
             <LanguagePairSwitcher />
           </div>

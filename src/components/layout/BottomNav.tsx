@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, BookText, User, Settings, Trophy } from "lucide-react";
+import { InstallPwaButton } from "@/components/pwa/InstallPwaButton";
+import { usePwa } from "@/context/PwaContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +19,7 @@ const NAV = [
 export function BottomNav() {
   const pathname = usePathname();
   const { t } = useTranslation();
+  const { isInstallable } = usePwa();
 
   return (
     <nav
@@ -24,6 +27,11 @@ export function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Mobile navigation"
     >
+      {isInstallable && (
+        <div className="border-b border-white/10 px-3 py-2">
+          <InstallPwaButton size="sm" fullWidth />
+        </div>
+      )}
       <div className="flex w-full items-center justify-around px-1 py-2 sm:px-2">
         {NAV.map(({ href, icon: Icon, labelKey }) => {
           const active = pathname === href;

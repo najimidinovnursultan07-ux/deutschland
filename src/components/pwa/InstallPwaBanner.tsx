@@ -1,77 +1,28 @@
 "use client";
 
+import { X, Download, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { X, Download } from "lucide-react";
+import { usePwa } from "@/context/PwaContext";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/useTranslation";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
-function isStandaloneDisplay(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone ===
-      true
-  );
-}
+const DISMISS_KEY = "lingua:pwa-banner-dismissed";
 
 export function InstallPwaBanner() {
   const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const { isInstallable, isInstalling, installApp } = usePwa();
+  const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    if (isStandaloneDisplay()) return;
-
-    const onBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-
-    const onInstalled = () => {
-      setVisible(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    window.addEventListener("appinstalled", onInstalled);
-
-    if (!sessionStorage.getItem("lingua:pwa-banner-dismissed")) {
-      setVisible(true);
-    }
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
+    setDismissed(sessionStorage.getItem(DISMISS_KEY) === "1");
   }, []);
-
-  const handleInstall = useCallback(async () => {
-    if (!deferredPrompt) return;
-
-    await deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-
-    if (choice.outcome === "accepted") {
-      setVisible(false);
-    }
-  }, [deferredPrompt]);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
-    setVisible(false);
-    sessionStorage.setItem("lingua:pwa-banner-dismissed", "1");
+    sessionStorage.setItem(DISMISS_KEY, "1");
   }, []);
 
-  if (!visible || dismissed || isStandaloneDisplay()) return null;
+  if (!isInstallable || dismissed) return null;
 
   return (
     <div
@@ -85,18 +36,22 @@ export function InstallPwaBanner() {
     >
       <button
         type="button"
-        onClick={() => void handleInstall()}
-        disabled={!deferredPrompt}
+        onClick={() => void installApp()}
+        disabled={isInstalling}
         className="flex min-w-0 flex-1 items-center justify-center gap-2 text-center text-sm font-medium text-white sm:text-base"
       >
-        <Download size={16} className="shrink-0" />
+        {isInstalling ? (
+          <Loader2 size={16} className="shrink-0 animate-spin" />
+        ) : (
+          <Download size={16} className="shrink-0" />
+        )}
         <span className="break-words">📲 {t("pwa.install")}</span>
       </button>
       <button
         type="button"
         onClick={handleDismiss}
         className="shrink-0 rounded-lg p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white"
-        aria-label={t("feedback.close")}
+        aria-label={t("pwa.dismiss")}
       >
         <X size={18} />
       </button>

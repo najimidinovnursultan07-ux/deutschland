@@ -6,6 +6,7 @@ import { Logo } from "@/components/ui/Logo";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { LoginForm } from "./LoginForm";
 import { SignUpForm } from "./SignUpForm";
+import { InstallPwaButton } from "@/components/pwa/InstallPwaButton";
 import { useTranslation } from "@/hooks/useTranslation";
 
 type AuthMode = "login" | "signup";
@@ -30,6 +31,9 @@ export function AuthScreen() {
             <Sparkles className="h-6 w-6 text-amber-300" />
           </h1>
           <p className="mt-2 text-sm text-white/60">{t("auth.subtitle")}</p>
+          <div className="mt-4 flex justify-center">
+            <InstallPwaButton size="md" />
+          </div>
         </div>
 
         <GlassCard className="border-white/10">
