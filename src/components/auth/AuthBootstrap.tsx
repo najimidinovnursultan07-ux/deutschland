@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { apiFetch } from "@/lib/api/client";
 import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
 import type { PersistedAppState } from "@/lib/progress/appStateRepository";
@@ -30,7 +31,7 @@ export function AuthBootstrap() {
 
     let cancelled = false;
 
-    void fetch("/api/progress", { credentials: "include", cache: "no-store" })
+    void apiFetch("/api/progress", { credentials: "include", cache: "no-store" })
       .then(async (res) => {
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as { state: PersistedAppState | null };

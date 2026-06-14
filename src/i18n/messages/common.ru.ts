@@ -4,7 +4,7 @@ export const commonRu = {
   dictionary: "Словарь",
   profile: "Профиль",
   settings: "Настройки",
-  leaderboard: "Лиги",
+  leaderboard: "Рейтинг",
   signIn: "Войти",
   signUp: "Регистрация",
   logout: "Выйти",

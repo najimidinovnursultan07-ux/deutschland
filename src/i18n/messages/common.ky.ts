@@ -4,7 +4,7 @@ export const commonKy = {
   dictionary: "Сөздүк",
   profile: "Профиль",
   settings: "Жөндөөлөр",
-  leaderboard: "Лигалар",
+  leaderboard: "Рейтинг",
   signIn: "Кирүү",
   signUp: "Катталуу",
   logout: "Чыгуу",

@@ -5,11 +5,11 @@ export const ruMessages: MessageTree = {
   ...commonRu,
 
   nav: {
-    home: commonRu.home,
-    dictionary: commonRu.dictionary,
-    profile: commonRu.profile,
-    settings: commonRu.settings,
-    leaderboard: commonRu.leaderboard,
+    home: "Главная",
+    dictionary: "Словарь",
+    leaderboard: "Рейтинг",
+    profile: "Профиль",
+    settings: "Настройки",
     help: "Центр помощи",
     faq: "Частые вопросы",
     support: "Связаться с нами",

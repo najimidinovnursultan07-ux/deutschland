@@ -10,6 +10,7 @@ import {
   normalizeAuthEmail,
   normalizeAuthPassword,
 } from "@/lib/auth/validation";
+import { apiFetch } from "@/lib/api/client";
 import type { ProfileUpdateData, SignUpData, User } from "@/types";
 
 interface AuthState {
@@ -41,7 +42,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10_000);
 
-      const res = await fetch("/api/auth/me", {
+      const res = await apiFetch("/api/auth/me", {
         credentials: "include",
         cache: "no-store",
         signal: controller.signal,
@@ -84,7 +85,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await apiFetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -136,7 +137,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await apiFetch("/api/auth/register", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -170,7 +171,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     try {
-      await fetch("/api/auth/session", {
+      await apiFetch("/api/auth/session", {
         method: "DELETE",
         credentials: "include",
       });
@@ -182,7 +183,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   updateProfile: async (data) => {
     try {
-      const res = await fetch("/api/auth/profile", {
+      const res = await apiFetch("/api/auth/profile", {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

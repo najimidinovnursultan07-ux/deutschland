@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { apiFetch } from "@/lib/api/client";
 import { useAuthStore } from "@/store/authStore";
 import { useAppStore } from "@/store/appStore";
 
@@ -39,7 +40,7 @@ export function ProgressSync() {
 
     timerRef.current = setTimeout(() => {
       const state = exportPersistedState();
-      void fetch("/api/progress", {
+      void apiFetch("/api/progress", {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api/client";
 import type { LeaderboardEntry } from "@/types";
 
 export interface LeaderboardRow extends LeaderboardEntry {
@@ -18,7 +19,7 @@ export function useLeaderboard(currentUserId?: string | null) {
     setError(null);
 
     try {
-      const res = await fetch("/api/leaderboard", { cache: "no-store" });
+      const res = await apiFetch("/api/leaderboard", { cache: "no-store" });
       const data = (await res.json().catch(() => null)) as {
         entries?: LeaderboardEntry[];
         error?: string;

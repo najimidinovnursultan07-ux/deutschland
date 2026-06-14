@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api/client";
 import { useAuthStore } from "@/store/authStore";
 import { canManageUsers } from "@/lib/admin";
 import type { DirectoryUser } from "@/types";
@@ -22,7 +23,7 @@ export function useAdminUsers() {
     setError(null);
 
     try {
-      const res = await fetch("/api/users", { credentials: "include" });
+      const res = await apiFetch("/api/users", { credentials: "include" });
       const data = (await res.json().catch(() => null)) as {
         users?: DirectoryUser[];
         error?: string;
@@ -49,7 +50,7 @@ export function useAdminUsers() {
       setError(null);
 
       try {
-        const res = await fetch("/api/users", {
+        const res = await apiFetch("/api/users", {
           method: "PATCH",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

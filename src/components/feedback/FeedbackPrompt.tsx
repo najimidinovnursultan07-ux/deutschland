@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuthStore } from "@/store/authStore";
+import { apiFetch } from "@/lib/api/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ function FeedbackModal({ open, onClose }: FeedbackModalProps) {
     setError(null);
 
     try {
-      const res = await fetch("/api/feedback", {
+      const res = await apiFetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

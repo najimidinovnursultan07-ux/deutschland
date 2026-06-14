@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
+import { apiFetch } from "@/lib/api/client";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuthStore } from "@/store/authStore";
 
@@ -34,7 +35,7 @@ export function SuggestionForm() {
     setError(null);
 
     try {
-      const res = await fetch("/api/suggestions", {
+      const res = await apiFetch("/api/suggestions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

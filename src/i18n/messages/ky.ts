@@ -5,11 +5,11 @@ export const kyMessages: MessageTree = {
   ...commonKy,
 
   nav: {
-    home: commonKy.home,
-    dictionary: commonKy.dictionary,
-    profile: commonKy.profile,
-    settings: commonKy.settings,
-    leaderboard: commonKy.leaderboard,
+    home: "Башкы бет",
+    dictionary: "Сөздүк",
+    leaderboard: "Рейтинг",
+    profile: "Профиль",
+    settings: "Жөндөөлөр",
     help: "Жардам борбору",
     faq: "Көп берилүүчү суроолор",
     support: "Байланышуу",

@@ -29,9 +29,9 @@ export function isProductionDeployment(): boolean {
 
 /** Auth/progress must use Redis on Vercel — filesystem is not durable there. */
 export function assertPersistentStorage(): void {
-  if (isProductionDeployment() && !isRedisConfigured()) {
+  if (process.env.VERCEL === "1" && !isRedisConfigured()) {
     throw new PersistentStorageError(
-      "Persistent storage is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in your deployment environment."
+      "Persistent storage is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in your deployment environment.",
     );
   }
 }

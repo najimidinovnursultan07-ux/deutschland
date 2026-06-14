@@ -75,7 +75,7 @@ export function ProfileView() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">
-          {getUiString(interfaceLang, "profile")}
+          {t("nav.profile")}
         </h1>
         {!isEditing && (
           <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
