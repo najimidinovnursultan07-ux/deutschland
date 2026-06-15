@@ -19,7 +19,9 @@ const NAV = [
 export function BottomNav() {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { isInstallable } = usePwa();
+  const { isInstallable, isInstagramInApp } = usePwa();
+
+  const showInstallBar = isInstallable || isInstagramInApp;
 
   return (
     <nav
@@ -27,7 +29,7 @@ export function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Mobile navigation"
     >
-      {isInstallable && (
+      {showInstallBar && (
         <div className="border-b border-white/10 px-3 py-2">
           <InstallPwaButton size="sm" fullWidth />
         </div>

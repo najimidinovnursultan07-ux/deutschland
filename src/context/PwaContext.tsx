@@ -9,17 +9,25 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { InstagramBrowserHintModal } from "@/components/pwa/InstagramBrowserHintModal";
+import { isInstagramInAppBrowser } from "@/lib/pwa/detectInAppBrowser";
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const INSTAGRAM_HINT_DISMISS_KEY = "lingua:instagram-hint-dismissed";
+
 interface PwaContextValue {
   isInstallable: boolean;
   isInstalled: boolean;
   isInstalling: boolean;
+  isInstagramInApp: boolean;
+  isInstagramHintOpen: boolean;
   installApp: () => Promise<boolean>;
+  openInstagramInstallHint: () => void;
+  closeInstagramInstallHint: () => void;
 }
 
 const PwaContext = createContext<PwaContextValue | null>(null);
@@ -38,11 +46,32 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isInstagramInApp, setIsInstagramInApp] = useState(false);
+  const [isInstagramHintOpen, setIsInstagramHintOpen] = useState(false);
+
+  const openInstagramInstallHint = useCallback(() => {
+    setIsInstagramHintOpen(true);
+  }, []);
+
+  const closeInstagramInstallHint = useCallback(() => {
+    setIsInstagramHintOpen(false);
+    sessionStorage.setItem(INSTAGRAM_HINT_DISMISS_KEY, "1");
+  }, []);
 
   useEffect(() => {
     if (isStandaloneDisplay()) {
       setIsInstalled(true);
       return;
+    }
+
+    const inInstagram = isInstagramInAppBrowser();
+    setIsInstagramInApp(inInstagram);
+
+    if (
+      inInstagram &&
+      sessionStorage.getItem(INSTAGRAM_HINT_DISMISS_KEY) !== "1"
+    ) {
+      setIsInstagramHintOpen(true);
     }
 
     const onBeforeInstall = (event: Event) => {
@@ -65,6 +94,11 @@ export function PwaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const installApp = useCallback(async (): Promise<boolean> => {
+    if (isInstagramInApp) {
+      openInstagramInstallHint();
+      return false;
+    }
+
     if (!deferredPrompt) return false;
 
     setIsInstalling(true);
@@ -85,19 +119,39 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsInstalling(false);
     }
-  }, [deferredPrompt]);
+  }, [deferredPrompt, isInstagramInApp, openInstagramInstallHint]);
 
   const value = useMemo<PwaContextValue>(
     () => ({
       isInstallable: Boolean(deferredPrompt) && !isInstalled,
       isInstalled,
       isInstalling,
+      isInstagramInApp,
+      isInstagramHintOpen,
       installApp,
+      openInstagramInstallHint,
+      closeInstagramInstallHint,
     }),
-    [deferredPrompt, isInstalled, isInstalling, installApp],
+    [
+      deferredPrompt,
+      isInstalled,
+      isInstalling,
+      isInstagramInApp,
+      isInstagramHintOpen,
+      installApp,
+      openInstagramInstallHint,
+      closeInstagramInstallHint,
+    ],
   );
 
-  return <PwaContext.Provider value={value}>{children}</PwaContext.Provider>;
+  return (
+    <PwaContext.Provider value={value}>
+      {children}
+      {isInstagramHintOpen && (
+        <InstagramBrowserHintModal onClose={closeInstagramInstallHint} />
+      )}
+    </PwaContext.Provider>
+  );
 }
 
 export function usePwa(): PwaContextValue {

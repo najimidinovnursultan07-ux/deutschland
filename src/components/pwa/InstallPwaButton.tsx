@@ -19,9 +19,16 @@ export function InstallPwaButton({
   showIcon = true,
 }: InstallPwaButtonProps) {
   const { t } = useTranslation();
-  const { isInstallable, isInstalling, installApp } = usePwa();
+  const {
+    isInstallable,
+    isInstalling,
+    isInstagramInApp,
+    installApp,
+    openInstagramInstallHint,
+  } = usePwa();
 
-  if (!isInstallable) return null;
+  const visible = isInstallable || isInstagramInApp;
+  if (!visible) return null;
 
   const sizeClasses = {
     sm: "px-3 py-2 text-xs",
@@ -29,10 +36,18 @@ export function InstallPwaButton({
     lg: "px-5 py-3 text-base",
   };
 
+  const handleClick = () => {
+    if (isInstagramInApp) {
+      openInstagramInstallHint();
+      return;
+    }
+    void installApp();
+  };
+
   return (
     <button
       type="button"
-      onClick={() => void installApp()}
+      onClick={handleClick}
       disabled={isInstalling}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-xl font-medium text-white transition-all",
