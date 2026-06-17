@@ -19,9 +19,9 @@ const NAV = [
 export function BottomNav() {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { isInstallable, isInstagramInApp } = usePwa();
+  const { isInstallable, isInstagramInApp, isIosSafari } = usePwa();
 
-  const showInstallBar = isInstallable || isInstagramInApp;
+  const showInstallBar = isInstallable || isInstagramInApp || isIosSafari;
 
   return (
     <nav

@@ -23,11 +23,13 @@ export function InstallPwaButton({
     isInstallable,
     isInstalling,
     isInstagramInApp,
+    isIosSafari,
     installApp,
     openInstagramInstallHint,
+    openIosInstallHint,
   } = usePwa();
 
-  const visible = isInstallable || isInstagramInApp;
+  const visible = isInstallable || isInstagramInApp || isIosSafari;
   if (!visible) return null;
 
   const sizeClasses = {
@@ -39,6 +41,10 @@ export function InstallPwaButton({
   const handleClick = () => {
     if (isInstagramInApp) {
       openInstagramInstallHint();
+      return;
+    }
+    if (isIosSafari) {
+      openIosInstallHint();
       return;
     }
     void installApp();
