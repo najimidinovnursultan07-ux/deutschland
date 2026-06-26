@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { InstallPwaButton } from "@/components/pwa/InstallPwaButton";
 import { LanguagePairSwitcher } from "./LanguagePairSwitcher";
-import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
@@ -22,7 +20,6 @@ const NAV_ITEMS = [
 export function Header() {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
 
   return (
@@ -64,10 +61,6 @@ export function Header() {
               className="hidden h-8 w-8 rounded-full border border-white/20 sm:block"
             />
           )}
-          <Button variant="ghost" size="sm" onClick={logout} aria-label="Logout">
-            <LogOut size={16} />
-            <span className="hidden sm:inline">{t("logout")}</span>
-          </Button>
         </div>
       </div>
     </header>

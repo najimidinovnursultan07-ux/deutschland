@@ -11,9 +11,11 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Toggle } from "@/components/ui/Toggle";
 import { LanguagePairSwitcher } from "@/components/layout/LanguagePairSwitcher";
 import { SupportAccordion } from "./SupportAccordion";
+import { SettingsLogoutCard } from "./SettingsLogoutCard";
 import { SuggestionForm } from "./SuggestionForm";
 import { RootAdminSettingsPanel } from "./RootAdminSettingsPanel";
 import { getUiString } from "@/lib/constants";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { requestNotificationPermission } from "@/lib/notifications/reminderEngine";
 import {
@@ -26,6 +28,7 @@ import type { LanguagePair, Theme } from "@/types";
 import { cn } from "@/lib/utils";
 
 export function SettingsView() {
+  const { t } = useTranslation();
   const interfaceLang = useInterfaceLang();
   const currentUser = useAuthStore((s) => s.user);
   const settings = useAppStore((s) => s.settings);
@@ -55,7 +58,7 @@ export function SettingsView() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <h1 className="text-2xl font-bold text-white">
-        {getUiString(interfaceLang, "settings")}
+        {t("nav.settings")}
       </h1>
 
       <GlassCard>
@@ -121,20 +124,20 @@ export function SettingsView() {
             {getUiString(interfaceLang, "theme")}
           </label>
           <div className="flex gap-2">
-            {(["dark", "light"] as Theme[]).map((t) => (
+            {(["dark", "light"] as Theme[]).map((theme) => (
               <button
-                key={t}
+                key={theme}
                 type="button"
-                onClick={() => updateSettings({ theme: t })}
+                onClick={() => updateSettings({ theme })}
                 className={cn(
                   "flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-medium transition-all",
-                  settings.theme === t
+                  settings.theme === theme
                     ? "border-violet-400 bg-violet-500/30 text-white"
                     : "border-white/20 bg-white/5 text-white/60 hover:bg-white/10"
                 )}
               >
-                {t === "dark" ? <Moon size={16} /> : <Sun size={16} />}
-                {getUiString(interfaceLang, t === "dark" ? "dark" : "light")}
+                {theme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
+                {getUiString(interfaceLang, theme === "dark" ? "dark" : "light")}
               </button>
             ))}
           </div>
@@ -146,11 +149,12 @@ export function SettingsView() {
       <GlassCard>
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
           <Smartphone size={18} />
-          {getUiString(interfaceLang, "support")} /{" "}
-          {getUiString(interfaceLang, "help")}
+          {t("nav.support")}
         </h2>
         <SupportAccordion />
       </GlassCard>
+
+      <SettingsLogoutCard />
 
       {showRootAdminPanel && <RootAdminSettingsPanel />}
     </div>

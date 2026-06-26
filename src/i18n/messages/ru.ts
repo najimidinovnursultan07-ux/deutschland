@@ -9,10 +9,12 @@ export const ruMessages: MessageTree = {
     dictionary: "Словарь",
     leaderboard: "Рейтинг",
     profile: "Профиль",
+    profileSettings: "Настройки профиля",
     settings: "Настройки",
     help: "Центр помощи",
     faq: "Частые вопросы",
-    support: "Связаться с нами",
+    support: "Поддержка / Помощь",
+    logout: "Выйти из аккаунта",
   },
 
   support: {
@@ -99,6 +101,10 @@ export const ruMessages: MessageTree = {
   pwa: {
     install: "Установить приложение",
     dismiss: "Позже",
+  },
+
+  settings: {
+    logoutBtn: "Выйти из аккаунта",
   },
 
   profile: {

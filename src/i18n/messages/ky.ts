@@ -9,10 +9,12 @@ export const kyMessages: MessageTree = {
     dictionary: "Сөздүк",
     leaderboard: "Рейтинг",
     profile: "Профиль",
+    profileSettings: "Баракчанын жөндөөлөрү",
     settings: "Жөндөөлөр",
     help: "Жардам борбору",
     faq: "Көп берилүүчү суроолор",
-    support: "Байланышуу",
+    support: "Жардам / Колдоо",
+    logout: "Аккаунттан чыгуу",
   },
 
   support: {
@@ -99,6 +101,10 @@ export const kyMessages: MessageTree = {
   pwa: {
     install: "Колдонмону орнотуу",
     dismiss: "Кийинчерээк",
+  },
+
+  settings: {
+    logoutBtn: "Аккаунттан чыгуу",
   },
 
   profile: {
