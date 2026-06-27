@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo } from "react";
 import { useInterfaceLang } from "@/hooks/useInterfaceLang";
 import { translate } from "@/i18n/translate";
 import type { Locale } from "@/i18n/types";
@@ -15,13 +15,18 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const locale = useInterfaceLang();
 
+  const t = useCallback(
+    (key: string, params?: Record<string, string | number>) =>
+      translate(locale, key, params),
+    [locale],
+  );
+
   const value = useMemo(
     () => ({
       locale,
-      t: (key: string, params?: Record<string, string | number>) =>
-        translate(locale, key, params),
+      t,
     }),
-    [locale],
+    [locale, t],
   );
 
   useEffect(() => {

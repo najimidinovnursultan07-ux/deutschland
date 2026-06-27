@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 const SW_PATH = "/sw.js";
 const UPDATE_CHECK_MS = 5 * 60 * 1000;
+const VISIBILITY_DEBOUNCE_MS = 2_000;
 
 function skipWaitingWorker(registration: ServiceWorkerRegistration) {
   registration.waiting?.postMessage({ type: "SKIP_WAITING" });
@@ -11,6 +12,7 @@ function skipWaitingWorker(registration: ServiceWorkerRegistration) {
 
 export function ServiceWorkerUpdater() {
   const isReloadingRef = useRef(false);
+  const lastCheckRef = useRef(0);
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") return;
@@ -45,6 +47,10 @@ export function ServiceWorkerUpdater() {
     };
 
     const checkForUpdates = async () => {
+      const now = Date.now();
+      if (now - lastCheckRef.current < VISIBILITY_DEBOUNCE_MS) return;
+      lastCheckRef.current = now;
+
       try {
         const registration = await navigator.serviceWorker.getRegistration("/");
         if (!registration) return;
@@ -73,13 +79,10 @@ export function ServiceWorkerUpdater() {
 
     navigator.serviceWorker.addEventListener("controllerchange", reloadOnce);
 
-    const registrationPromise = registerServiceWorker();
+    void registerServiceWorker();
 
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        void registrationPromise.then((reg) => {
-          if (reg) void reg.update();
-        });
         void checkForUpdates();
       }
     };
@@ -89,13 +92,11 @@ export function ServiceWorkerUpdater() {
     }, UPDATE_CHECK_MS);
 
     window.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onVisible);
 
     return () => {
       navigator.serviceWorker.removeEventListener("controllerchange", reloadOnce);
       window.clearInterval(intervalId);
       window.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onVisible);
     };
   }, []);
 

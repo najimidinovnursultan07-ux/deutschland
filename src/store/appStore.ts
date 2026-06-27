@@ -184,6 +184,12 @@ export const useAppStore = create<AppStore>()((set, get) => ({
             state.hearts,
             state.lastHeartRegenAt
           );
+          if (
+            regen.hearts === state.hearts &&
+            regen.lastHeartRegenAt === state.lastHeartRegenAt
+          ) {
+            return state;
+          }
           return {
             hearts: regen.hearts,
             lastHeartRegenAt: regen.lastHeartRegenAt,

@@ -22,7 +22,7 @@ export function ProgressSync() {
       level: s.selectedLevel,
       session: s.activeLessonSession?.lessonId ?? null,
       settings: s.settings,
-    })
+    }),
   );
 
   const lastSyncedRef = useRef<string | null>(null);
@@ -48,7 +48,7 @@ export function ProgressSync() {
       }).then((res) => {
         if (res.ok) lastSyncedRef.current = snapshot;
       });
-    }, 800);
+    }, 1500);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
